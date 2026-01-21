@@ -1,0 +1,4 @@
+User-Agent: *
+Allow: /
+
+Sitemap: https://matroid.digitalax.xyz/sitemap.xml

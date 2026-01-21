@@ -1,0 +1,293 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Dosis Regular";
+  src: url("/fonts/DosisRegular.ttf");
+}
+
+@font-face {
+  font-family: "Digi Reg";
+  src: url("/fonts/DS-DIGI.ttf");
+}
+
+@font-face {
+  font-family: "Digi Bold";
+  src: url("/fonts/DS-DIGIB.ttf");
+}
+
+@font-face {
+  font-family: "Digi Italic";
+  src: url("/fonts/DS-DIGII.ttf");
+}
+
+@font-face {
+  font-family: "Digi T";
+  src: url("/fonts/DS-DIGIT.ttf");
+}
+
+@font-face {
+  font-family: "Clash Display";
+  src: url("/fonts/ClashDisplay.ttf");
+}
+
+@font-face {
+  font-family: "Don Jose";
+  src: url("/fonts/DonJoseBigote.ttf");
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/fonts/Satoshi-Medium.otf");
+}
+
+@font-face {
+  font-family: "Multiple";
+  src: url("/fonts/multiple.otf");
+}
+
+@font-face {
+  font-family: "Earls Revenge";
+  src: url("/fonts/EarlsRevenge.ttf");
+}
+
+@font-face {
+  font-family: "Hermano";
+  src: url("/fonts/HermanoAltoStamp.ttf");
+}
+
+@font-face {
+  font-family: "Digi";
+  src: url("/fonts/digi.ttf");
+}
+
+@theme {
+  --font-dosis: "Dosis Regular";
+  --font-digiR: "Digi Reg";
+  --font-digiB: "Digi Bold";
+  --font-digiI: "Digi Italic";
+  --font-digiT: "Digi T";
+  --font-clash: "Clash Display";
+  --font-jose: "Don Jose";
+  --font-mult: "Multiple";
+  --font-sats: "Satoshi";
+  --font-earl: "Earls Revenge";
+  --font-herm: "Hermano";
+  --font-digi: "Digi";
+
+  --color-offBlack: #111313;
+  --color-offBlue: #81a8f8;
+  --color-black: #000000;
+  --color-white: #fbfbfb;
+  --color-offWhite: #f2f2f2;
+  --color-lensLight: #abfe2c;
+  --color-lensLightBlue: #00a3ff;
+  --color-lensDark: #070707;
+  --color-mazul: #2a36f6;
+  --color-lBlue: #81a8f8;
+  --color-pastel: #f3f7c8;
+  --color-aBlue: #b7c5da;
+  --color-verde: #91ff85;
+  --color-verdea: #85ff9a;
+  --color-sol: #fcdc42;
+  --color-rosa: #fb5cfd;
+  --color-cost: #ffac29;
+  --color-ballena: #fbfbf9;
+  --color-lemon: #fef499;
+  --color-ama: #f6ea55;
+  --color-midGreen: #09c261;
+  --color-rojo: #f62a2a;
+  --color-gran: #fe4747;
+  --color-morado: #8c3cff;
+  --color-azul: #85aeff;
+  --color-violeta: #8b5cf6;
+  --color-gris: #868686;
+  --color-grisI: #c4c4c4;
+  --color-grisC: #c8c8c8;
+  --color-grisO: #767676;
+  --color-spots: #daf0ff;
+  --color-dBrown: #452800;
+  --color-ligera: #cefc04;
+  --color-mist: #b8c5d6;
+  --color-nave: #111f38;
+  --color-smoke: #f4f4f4;
+  --color-suave: #acacac;
+  --color-naranja: #f77737;
+  --color-mar: #4968ea;
+  --color-bright: #fa4040;
+  --color-viol: #9da1f4;
+  --color-bluet: #2a2dff;
+  --color-amarillo: #f7f7f3;
+  --color-agua: #00d9e8;
+  --color-grayBlue: #c9d8e4;
+  --color-oscuro: #3b3b3b;
+  --color-midWhite: #faf4e8;
+  --color-mustard: #fbeed1;
+  --color-midMus: #fdf3d8;
+  --color-heat: #fbdb86;
+  --color-deep: #0091ff;
+  --color-libGray: #dedce1;
+  --color-flight: #f0e7e2;
+  --color-liBl: #a3e3f4;
+  --color-liOr: #f9c571;
+  --color-liVi: #c1a8e8;
+  --color-offY: #feea66;
+  --color-liDa: #f27a24;
+  --color-lime: #77ffb8;
+  --color-baby: #53b4ff;
+  --color-lily: #f6ddc3;
+  --color-lili: #b4fab5;
+  --color-bluey: #32c5ff;
+  --color-offYellow: #f7f7f3;
+  --color-comp: #b9b9b9;
+  --color-yell: #fcdb8f;
+  --color-dcomp: #606362;
+  --color-dullY: #f9ebcc;
+  --color-dialY: #fbdb84;
+  --color-dialG: #a6da70;
+  --color-lB: #06a9cf;
+  --color-ocean: #078fd6;
+  --color-shame: #f6f5f0;
+  --color-disk: #44afd3;
+  --color-coast: #b9d9ff;
+  --color-post: #712af6;
+  --color-moss: #212929;
+  --color-weed: #1c2222;
+  --color-litnus: #06cf0b;
+  --color-posh: #0a15c7;
+  --color-cap: #919191;
+  --color-dG: #001517;
+  --color-naran: #f87326;
+  --color-playa: #2a58f6;
+}
+
+@layer utilities {
+  .font-dosis {
+    font-family: var(--font-dosis);
+  }
+  .font-digiR {
+    font-family: var(--font-digiR);
+  }
+  .font-digiB {
+    font-family: var(--font-digiB);
+  }
+  .font-digiI {
+    font-family: var(--font-digiI);
+  }
+  .font-digiT {
+    font-family: var(--font-digiT);
+  }
+  .font-clash {
+    font-family: var(--font-clash);
+  }
+  .font-jose {
+    font-family: var(--font-jose);
+  }
+  .font-mult {
+    font-family: var(--font-mult);
+  }
+  .font-sats {
+    font-family: var(--font-sats);
+  }
+  .font-earl {
+    font-family: var(--font-earl);
+  }
+  .font-herm {
+    font-family: var(--font-herm);
+  }
+  .font-digi {
+    font-family: var(--font-digi);
+  }
+}
+
+html,
+body {
+  padding: 0;
+  margin: 0;
+  background-color: black;
+  overflow-x: hidden;
+}
+
+.bg-emu {
+  background-image: url("https://thedial.infura-ipfs.io/ipfs/QmenAuQwZ4oGUWg1MjVJU6bN1C2asbmZSDPenbDs3N9vR4");
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+}
+
+body::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+#noScroll::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+#noScroll::-webkit-scrollbar-track:active {
+  background-color: transparent !important;
+}
+
+#noScroll::-webkit-scrollbar-thumb:active {
+  background-color: transparent !important;
+}
+
+body::-webkit-scrollbar-track:active {
+  background-color: transparent !important;
+}
+
+body::-webkit-scrollbar-thumb:active {
+  background-color: transparent !important;
+}
+
+html::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+html::-webkit-scrollbar-track:active {
+  background-color: transparent !important;
+}
+
+html::-webkit-scrollbar-thumb:active {
+  background-color: transparent !important;
+}
+
+#conic {
+  background: conic-gradient(
+    #f7f7f3,
+    #dbdfb2,
+    #aeeccf,
+    #cedfde,
+    #f1d2ef,
+    #f6ebf7,
+    #f0ecf6,
+    #ffffff,
+    #f6f7e6
+  );
+}
+
+#conicBlack {
+  background: conic-gradient(
+    #000000,
+    #131313,
+    #000000,
+    #202022,
+    #000000,
+    #131313,
+    #000000
+  );
+}
+
+#select2 {
+  background: conic-gradient(#2a36f6, #0714d6, #0710a2, #0a15c7, #2a36f6);
+}
+
+#select2:hover {
+  background: conic-gradient(#2a36f6, #0714d6, #0710a2, #0a15c7, #2a36f6);
+  opacity: 0.4;
+}
