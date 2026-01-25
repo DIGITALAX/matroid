@@ -1,0 +1,1251 @@
+# Background
+
+on the launch of $MONA on ethereum in 2020, the total supply was fixed at 10,000 tokens. ninety percent of that supply was distributed directly to the community through staking pools. ten percent was allocated to a protocol reserve treasury. there was no team allocation and no vc allocation.
+
+in 2021, an additional 1,300 tokens were minted, increasing the total supply by thirteen percent to 11,300. the same pattern was applied. ten percent of the new supply went to the treasury, the remaining ninety percent was distributed through newly launched staking pools on polygon. after this increase, a hard cap was set in the contract, preventing any further minting.
+
+the structure has remained consistent from the start. ten percent protocol reserve. ninety percent community distribution. zero percent team or vc.
+
+of the 1,130 tokens assigned to the protocol reserve, 843 $MONA remain as of january 2026. most of the spent portion was used to seed liquidity pools on uniswap across ethereum and polygon. those lp positions have not been touched. the rest was distributed through various ecosystem initiatives, all documented in the monthly transparency reports published between 2020 and 2023.
+
+after years of continuous building, from applications to the slow unbundling of fashion into web3-native infrastructure, the protocol has reached a different phase. enough internal systems exist now to ask a harder question. how does this keep working without us.
+
+not abandoning. but functioning.
+
+a system that requires a core team to stay alive is still fragile. if distribution stops when engineers step away, if wallets freeze, if power concentrates by default, then decentralization is incomplete. everyone in this space understands this intuitively. even ethereum itself has not reached full-stack decentralization. the promise is real, but it is still under construction.
+
+that does not mean waiting. it means continuing to move closer by replacing discretion with code, coordination with contracts, and intent with infrastructure that runs in the open.
+
+this brings the role of $MONA back into focus.
+
+a treasury full of idle tokens does not do much by itself. value starts to matter when it moves through systems and leaves traces that other systems can respond to. a token becomes useful when its job is clear.
+
+if you are not a web3 engineer, it helps to understand what an erc20 actually is and does, and what it is not. it is not a coin flying around between wallets. nothing is ever physically sent.
+
+$MONA is just a contract, lines of code, mostly boring, but very powerful. think of it as a table. one column is addresses. the other is balances. when a transfer happens, the contract subtracts a number from one row and adds it to another. that state change is executed by the network, written into a block, and every node agrees that this updated table is now the truth.
+
+that is the whole mechanism. no objects move. no coins travel. just shared accounting, enforced by code and synchronized across the chain.
+
+at this point people usually say, so this is how banks work, right. the same thing as my money in an account. yes, structurally, it is. the difference is trust. with banks, you trust that the numbers correspond to reality, that the balance is there, that nothing else is happening behind the scenes. history and mr. morgan suggest otherwise.
+
+when you see a $MONA balance, that ledger is real. if the numbers are wrong, the ledger shows it. if tokens are missing, the ledger shows that too. there is no separate story happening elsewhere. very simple.
+
+because that table follows a standard format, other contracts know how to read it and write to it. wallets know how to display it. applications know how to depend on it. this is what makes an erc20 powerful. not scarcity by itself, but composability. it is a ledger that many independent systems can coordinate around without trusting each other.
+
+$MONA functions as that ledger for the digitalax ecosystem. applications record activity against it. value moves between projects through it. staking, rewards, and claims all resolve back to the same shared accounting surface. everyone is counting from the same place, using the same unit, across the same chains, with the EVM as the shared source of truth.
+
+this is why that question “why not just use ethereum or bitcoin” misses what is actually happening. using one global unit for everything is like trying to run accounting in dog ears or steering wheels. you can count them, technically, but the numbers stop meaning anything. context collapses. incentives blur. systems stop lining up. and then you hit the details. decimals. fractions. math. can lady beetle wings really split cleanly into eighteen decimal places?
+
+domain-specific systems need domain-specific ledgers. they need their own unit of account to stay coherent, flexible, and able to tune composability from inside the ecosystem.
+
+$MONA exists to do that work. it is the internal accounting surface that lets the ecosystem coordinate, distribute value, and keep running as more of the system moves out of human hands and into code.
+
+once a token functions as an internal ledger, the problem shifts from release to continuation. not how value is introduced, but how it keeps unfolding across an expanding field of participants, interactions, and projects, without depending on a persistent group to intermediate its movement.
+
+$MONA already passed through an early phase of programmable distribution. at launch, ninety percent of the supply was released through multiple staking rounds. that approach fit its moment. during the defi summer and nft eras, passive staking created cohesion, anchored early participation, and gave the ecosystem an initial shape.
+
+the present environment behaves differently. in these conditions, passive staking expresses presence rather than contribution. it reflects where value rests, not how it comes into being. once a token operates as a shared accounting surface, distribution needs to arise from activity itself. value should surface through interaction, persist through recurrence, and disperse through adjacency, without passing through discretionary gates or periodic orchestration.
+
+this marks a shift toward distribution as a continuous property of the network. something introduced in stages, exercised in live conditions, and allowed to develop reliability through use rather than prior design.
+
+any independent designer, developer, or agent can integrate the matroid kit directly into their contracts. once integrated, their application routes $MONA in and out flows through the kit. within each epoch, the activity they generate through their code, product, or community is recorded on-chain alongside the activity of every other participating project.
+
+that activity resolves into distribution. projects receive $MONA from the treasury in proportion to the activity they contribute relative to others during the same epoch. this distribution is automatic and continuous. projects can also configure how their share is split, using $MONA to further induce activity within their own ecosystem through automated allocation to global staking pools and project-specific staking pools. depending on the pool, $MONA holders, genesis holders, pode holders, and fashion nft holders can all stake, and also vote to slash misaligned activity and projects.
+
+to introduce the suite in stages, ensure contract security, and preserve flexibility, the first iteration deploys 50 $MONA for distribution over a six-month target window. as participation and project activity increase, this amount can expand. the long-term intent is for the full treasury balance to be distributed automatically over approximately four years through these recurring activity cycles.
+
+because of the digitalax ecosystem’s active development and existing usage on lens chain, the matroid contract suite deploys there first. the design remains chain-agnostic. as other evm-compatible, zk-enabled, and decentralized chains align, staged deployments allow the system to extend and migrate without disrupting the underlying structure.
+
+a first project to integrate the matroid kit is ganda, extending off espa, where gaming, textiles, and web3 intersect. ganda routes its $MONA flows through the kit and anchors its activity on lens, with staking pools set up for both $MONA holders and nft holders.
+
+matroids are what make this resolution possible at scale.
+
+mathematically, a matroid defines which combinations of elements can coexist without breaking the structure they belong to. a matroid is a way of describing structure through independence.
+
+applied to $MONA, the elements are on-chain actions and flows. epochs provide a shared temporal frame. as activity accumulates, overlaps, and recombines across projects, the matroid preserves the shape of contribution so that distribution emerges from how activity relates.
+
+
+# Matroid Protocol Technical Specification
+
+## System Overview
+
+Matroid is a fully on-chain, permissionless activity distribution protocol that allocates MONA token rewards to projects based on verified token flow activity. The system combines activity tracking, scoring algorithms, staking mechanisms (global + project-specific ERC20 + NFT), governance slashing, and configurable reward distribution with zero off-chain dependencies.
+
+## Contract Architecture
+
+### Core Contracts (9 total)
+
+#### 1. MatroidRegistry.sol
+**Purpose**: Central state registry for all token flows, project metadata, epoch statistics, and reward configuration.
+
+**State Variables**:
+- `IERC20 public immutable mona` - MONA token contract reference
+- `address public matroidKit` - authorized kit contract (set once)
+- `address public owner` - registry owner
+- `uint256 public immutable epochDuration` - seconds per epoch (e.g., 604800 for 1 week)
+- `uint256 public immutable deployedAt` - deployment timestamp for epoch calculation
+- `uint256 public immutable maxTxPerWallet` - per-user transaction cap for scoring
+- `uint256 public immutable maxVolumePerWallet` - per-user volume cap for scoring
+- `StakingFactory public stakingFactory` - factory for deploying project pools
+- `mapping(address => MatroidLibrary.Project) private _projects` - project metadata + stats
+- `mapping(address => mapping(address => MatroidLibrary.TokenStats)) private _projectTokenStats` - per-project per-token lifetime stats
+- `mapping(address => mapping(address => mapping(address => bool))) private _projectTokenUserSeen` - user uniqueness tracking
+- `mapping(address => mapping(address => bool)) private _projectClaimers` - authorized claimers per project
+- `mapping(address => mapping(uint256 => MatroidLibrary.EpochStats)) private _epochStats` - per-project per-epoch activity metrics
+- Multiple nested mappings for epoch-level tracking (user seen flags, tx counts, volumes, token thresholds)
+- `address[] private _projectList` - enumerable project list
+
+**Key Functions**:
+- `setMatroidKit(address)` - one-time initialization (onlyOwner)
+- `registerProject(address project, bytes32 metadata, bool pool)` - called by MatroidKit, validates contract, optionally creates pools
+- `createProjectPool()` - callable by any registered project to create pools post-registration
+- `setRewardSplits(uint16 globalSplitBps, uint16 projectErc20SplitBps, uint16 projectNftSplitBps)` - configures reward distribution (sum ≤10000)
+- `setClaimer(address claimer, bool allowed)` - project authorizes/revokes claim addresses
+- `recordFlow(address project, address user, address token, uint256 amount, bool isIn)` - core flow recording with balance validation, updates all stats
+- `currentEpoch() returns (uint256)` - `(block.timestamp - deployedAt) / epochDuration`
+- `epochBounds(uint256 epoch) returns (uint256 start, uint256 end)` - epoch time boundaries
+- View functions for all stats and mappings
+
+**Internal Flow Recording**:
+- `_recordMonaEpoch()` - updates MONA-specific epoch stats: unique users, recurring users (checks prior epoch), capped tx/volume accumulation
+- `_recordOtherEpoch()` - updates other-token epoch stats, cross-project token counting (≥2 projects + ≥10 users threshold)
+
+**Access Control**:
+- `onlyMatroidKit` modifier - only kit can call `registerProject` and `recordFlow`
+- `onlyOwner` modifier - only owner can `setMatroidKit`
+
+#### 2. MatroidKit.sol
+**Purpose**: Minimal proxy interface for projects to interact with registry.
+
+**State Variables**:
+- `MatroidRegistry public immutable registry` - registry reference
+
+**Functions**:
+- `registerProject(bytes32 metadata, bool pool)` - registers `msg.sender` as project, emits `ProjectRegistered`
+- `matroidIn(address user, address token, uint256 amount)` - records user→project flow, calls `registry.recordFlow(..., true)`
+- `matroidOut(address user, address token, uint256 amount)` - records project→user flow, calls `registry.recordFlow(..., false)`
+
+**Events**:
+- `ProjectRegistered(address indexed project, bytes32 metadata)`
+- `MatroidIn(address indexed project, address indexed user, address indexed token, uint256 amount)`
+- `MatroidOut(address indexed project, address indexed user, address indexed token, uint256 amount)`
+
+**Flow Validation**: All flows validated in registry via `safeTransferFrom` with before/after balance checks (handles fee-on-transfer tokens).
+
+#### 3. MatroidScorer.sol
+**Purpose**: Pure on-chain scoring algorithm implementation.
+
+**Constants**:
+- `uint256 public constant SCALE = 1e18` - fixed-point scaling factor
+
+**State Variables**:
+- `uint256 public immutable alpha` - other-token bonus multiplier (scaled by 1e18)
+- `MatroidRegistry public immutable registry` - registry reference for stats
+
+**Core Function**:
+```solidity
+function score(address project, uint256 epoch) external view returns (uint256)
+```
+
+**Scoring Algorithm** (all values scaled by 1e18):
+1. Fetch `EpochStats` from registry
+2. Return 0 if `monaUniqueUsers == 0 || monaTotalVolume == 0`
+3. Calculate components:
+   - `sqrtU = sqrt(monaUniqueUsers) * SCALE`
+   - `retention = (monaRecurringUsers * SCALE) / monaUniqueUsers`, floored at `SCALE / 2` (50%)
+   - `activity = log2(monaCappedTxCount + 1) * SCALE`
+   - `cappedShare = (monaCappedVolume * SCALE) / monaTotalVolume`, capped at `SCALE`
+   - `concentration = (SCALE / 2) + ((SCALE - cappedShare) / 2)` - rewards volume distribution
+   - `base = (sqrtU * retention * activity * concentration) / SCALE^3`
+   - `otherIndex = sqrt(otherUniqueUsers) + log2(otherTxCount + 1) + otherTokensUsed` (unscaled integers)
+   - `otherBonus = SCALE + (alpha * otherIndex)`
+   - `score = (base * otherBonus) / SCALE`
+
+**Helper Functions**:
+- `_sqrt(uint256 y)` - Babylonian method square root
+- `_log2(uint256 x)` - integer log2 via bit shifting
+
+#### 4. Treasury.sol
+**Purpose**: Central escrow, epoch finalization, budget calculation, claim processing, reward splitting.
+
+**State Variables**:
+- `IERC20 public immutable mona` - MONA token reference
+- `MatroidRegistry public immutable registry` - registry reference
+- `MatroidScorer public immutable scorer` - scorer reference
+- `address public owner` - treasury owner
+- `GlobalStakingPool public globalPool` - global pool reference
+- `address public slashingContract` - slashing council address
+- `uint256 public immutable claimWindow` - claim expiry period (e.g., 2419200 = 4 weeks)
+- `uint256 public targetTotal` - target total distribution amount
+- `uint256 public targetDuration` - target distribution period
+- `uint256 public distributionStart` - timestamp when first claim occurs
+- `uint256 public totalDistributed` - cumulative distributed amount
+- `uint256 public baseBudget` - base epoch budget
+- `uint256 public perProjectBudget` - per-active-project budget increment
+- `mapping(uint256 => mapping(address => uint256)) private _claimable` - computed claimable amounts
+- `mapping(uint256 => mapping(address => bool)) private _claimableSet` - computation flags
+- `mapping(uint256 => MatroidLibrary.EpochData) private _epochData` - finalization data
+- `mapping(uint256 => mapping(address => bool)) private _epochSlashed` - slash flags
+- `mapping(uint256 => mapping(address => uint16)) private _epochSlashBps` - slash percentages
+- `mapping(uint256 => mapping(address => uint256)) private _slashRewards` - credited slash rewards
+- `mapping(uint256 => mapping(address => bool)) private _slashResolved` - resolution flags
+- `mapping(address => bool) private _blacklisted` - permanent blacklist
+
+**Key Functions**:
+
+**Budget Management**:
+- `deposit(uint256 amount)` - anyone can deposit MONA, increases `targetTotal`
+- `setTargetTotal(uint256 newTarget)` - owner only, can only increase
+- `reconcileTarget()` - anyone, sets `targetTotal = max(targetTotal, balance + distributed)`
+- `setTargetDuration(uint256 newDuration)` - owner only, can only increase
+- `setBudgets(uint256 baseBudget, uint256 perProjectBudget)` - owner only
+
+**Epoch Management**:
+```solidity
+function finalizeEpoch(uint256 epoch) external {
+    // Must be after epoch end
+    // Loops all projects, computes scores, sums totalScore + activeProjects + totalUniqueUsers
+    // Calculates epochBudget
+    // Stores EpochData: finalized=true, totalScore, activeProjects, budget, finalizedAt=block.timestamp
+}
+```
+
+**Budget Calculation**:
+```solidity
+function epochBudget(uint256 totalScore, uint256 activeProjects) public view returns (uint256) {
+    dynamicBudget = baseBudget + (perProjectBudget * activeProjects)
+    remaining = effectiveRemainingEpochs() // special handling if distributionStart == 0
+    remainingTarget = targetTotal - totalDistributed
+    scheduleBudget = remainingTarget / remaining
+    budget = min(dynamicBudget, scheduleBudget, balance)
+    return budget
+}
+```
+
+**Claiming**:
+```solidity
+function claim(uint256 epoch, address project) external nonReentrant {
+    // Validations: epoch ended, voting window closed, claim window not expired, msg.sender is claimer
+    // Calls computeClaimable if not set
+    // Finalizes slashing proposals and failed slashes
+    // Retrieves claimable + slashRewards
+    // Applies slash if _epochSlashed or _blacklisted (unless _slashResolved)
+    // Splits claimable amount:
+    //   - globalShare -> GlobalStakingPool.notifyReward()
+    //   - projectErc20Share -> ProjectStakingPool.notifyRewardToken()
+    //   - projectNftShare -> ProjectNFTStakingPool.notifyRewardToken()
+    //   - claimerShare -> direct transfer to msg.sender
+    // If slashed: calls _resolveSlashWithAmount() which sends 50% to SlashingCouncil.notifyVoterReward()
+    // Sets distributionStart on first claim
+    // Updates totalDistributed
+}
+```
+
+**Slash Operations**:
+- `applySlash(uint256 epoch, address project, uint16 slashBps, bool blacklist)` - called by SlashingCouncil only
+- `notifySlashReward(uint256 epoch, address project, uint256 amount)` - called by SlashingCouncil only, credits failed slash penalties to project
+- `resolveSlash(uint256 epoch, address project)` - public, processes slash without claiming
+- `computeClaimable(uint256 epoch, address project)` - computes `(budget * projectScore) / totalScore`, stores in `_claimable`
+- `sweepExpired(uint256 epoch, address project)` - anyone, clears expired claimables after `end + claimWindow`
+
+**Events**:
+- `FundsDeposited`, `TargetUpdated`, `TargetReconciled`, `DistributionStarted`, `TargetDurationUpdated`
+- `EpochFinalized(uint256 indexed epoch, uint256 totalScore, uint256 activeProjects, uint256 budget)`
+- `ClaimableSet`, `ClaimableCleared`, `Claimed(uint256 indexed epoch, address indexed project, address indexed claimer, uint256 amount)`
+- `SlashingContractUpdated`, `ProjectSlashed`, `SlashRewardNotified`, `SlashResolved`
+
+#### 5. StakingFactory.sol
+**Purpose**: Deterministic deployment of project-specific staking pools.
+
+**State Variables**:
+- `uint256 public immutable rewardDuration` - vesting period for all project pools
+
+**Function**:
+```solidity
+function createProjectPools(address monaToken, address project) external returns (address erc20Pool, address nftPool) {
+    erc20Pool = address(new ProjectStakingPool(monaToken, project, rewardDuration))
+    nftPool = address(new ProjectNFTStakingPool(monaToken, project, rewardDuration))
+    emit ProjectPoolsCreated(project, erc20Pool, nftPool)
+}
+```
+
+**Called by**: MatroidRegistry during `registerProject(pool=true)` or `createProjectPool()`
+
+#### 6. GlobalStakingPool.sol
+**Purpose**: Global MONA staking with single-token rewards, queued rewards, auto-pause.
+
+**Constants**:
+- `uint256 private constant RATE_SCALE = 1e18`
+
+**State Variables**:
+- `IERC20 public immutable mona` - MONA token
+- `uint256 public immutable rewardDuration` - vesting period
+- `uint256 public totalStaked` - total MONA staked
+- `uint256 public rewardPerTokenStored` - accumulator
+- `uint256 public lastUpdateTime` - last update timestamp
+- `uint256 public rewardRate` - reward per second (scaled by 1e18)
+- `uint256 public periodFinish` - reward period end timestamp
+- `uint256 public queuedRewards` - rewards waiting for stakers
+- `mapping(address => uint256) public staked` - user stake amounts
+- `mapping(address => uint256) public userRewardPerTokenPaid` - user debt
+- `mapping(address => uint256) public pendingRewards` - unclaimed rewards
+
+**Key Functions**:
+- `notifyReward(uint256 amount)` - called by Treasury, queues if `totalStaked == 0`, else starts vesting
+- `stake(uint256 amount)` - updates rewards, transfers MONA, increments stake, starts queued rewards if first staker
+- `unstake(uint256 amount)` - updates rewards, decrements stake, transfers MONA, pauses if last staker
+- `claim()` - updates rewards, transfers pending to user
+
+**Reward Calculation**:
+```solidity
+rewardPerToken = rewardPerTokenStored + ((delta * rewardRate) / totalStaked)
+earned = pendingRewards[user] + ((staked[user] * (rewardPerToken - userRewardPerTokenPaid[user])) / RATE_SCALE)
+```
+
+**Stream Management**:
+- `_startRewardStream(amount)` - merges new + queued + leftover, calculates `rewardRate = (total * RATE_SCALE) / rewardDuration`, sets `periodFinish`
+- `_pauseRewards()` - calculates remaining rewards, queues them, sets `rewardRate = 0`
+
+#### 7. ProjectStakingPool.sol
+**Purpose**: Project-specific ERC20 staking with multi-token rewards.
+
+**State Variables**:
+- `IERC20 public immutable mona` - MONA token (staking token)
+- `address public immutable project` - project address (owner)
+- `uint256 public immutable rewardDuration` - vesting period
+- `uint256 public totalStaked` - total MONA staked
+- `address[] public rewardTokens` - list of reward tokens
+- `mapping(address => MatroidLibrary.RewardToken) public rewardInfo` - per-token reward state
+- `mapping(address => uint256) public staked` - user stake amounts
+- `mapping(address => mapping(address => uint256)) public rewardDebt` - per-token per-user debt
+- `mapping(address => mapping(address => uint256)) public pendingRewards` - per-token per-user pending
+
+**Key Functions**:
+- `addRewardToken(address token)` - project only, enables new reward token
+- `removeRewardToken(address token)` - project only, disables token (requires no queued rewards and period finished)
+- `notifyRewardToken(address token, uint256 amount)` - anyone, queues if `totalStaked == 0`, else starts vesting
+- `stake(uint256 amount)` - updates all rewards, transfers MONA, increments stake, starts queued rewards if first staker
+- `unstake(uint256 amount)` - updates all rewards, decrements stake, transfers MONA, pauses all rewards if last staker
+- `claim(address token)` - updates token reward, transfers pending to user
+
+**Multi-Token Mechanics**:
+- Constructor auto-adds MONA as first reward token
+- Each token has independent `RewardToken` struct: `enabled, rewardRate, lastUpdateTime, periodFinish, rewardPerTokenStored, queuedRewards`
+- `_updateRewards(user)` - loops all tokens, calls `_updateRewardToken(user, token)`
+- `_syncRewardDebt(user)` - syncs debt for all tokens after stake changes
+- `_startQueuedRewards()` - starts all queued tokens when first user stakes
+
+**Reward Calculation** (per token):
+```solidity
+rewardPerToken[token] = rewardPerTokenStored + ((delta * rewardRate) / totalStaked)
+earned[user][token] = pendingRewards[user][token] + ((staked[user] * (rewardPerToken[token] - rewardDebt[user][token])) / RATE_SCALE)
+```
+
+**Events**:
+- `RewardTokenAdded(address indexed token)`
+- `RewardTokenRemoved(address indexed token)` (added in recent updates)
+- `RewardNotified(address indexed token, uint256 amount)`
+- `Staked`, `Unstaked`, `Claimed(address indexed user, address indexed token, uint256 amount)`
+
+#### 8. ProjectNFTStakingPool.sol
+**Purpose**: Project-specific NFT staking with weight-based rewards and multi-token support.
+
+**State Variables**:
+- `IERC20 public immutable mona` - MONA token (for rewards)
+- `address public immutable project` - project address (owner)
+- `uint256 public immutable rewardDuration` - vesting period
+- `uint256 public totalWeight` - sum of all staked NFT weights
+- `address[] public rewardTokens` - list of reward tokens
+- `address[] public whitelistedNfts` - enumerable whitelist
+- `mapping(address => uint256) public nftWeight` - weight per NFT collection
+- `mapping(address => bool) public nftWhitelisted` - whitelist flags
+- `mapping(address => MatroidLibrary.RewardToken) public rewardInfo` - per-token reward state
+- `mapping(address => uint256) public stakedWeight` - user total weight
+- `mapping(address => mapping(address => uint256)) public rewardDebt` - per-token per-user debt
+- `mapping(address => mapping(address => uint256)) public pendingRewards` - per-token per-user pending
+- `mapping(address => mapping(uint256 => address)) public stakedOwner` - NFT ownership tracking
+- `mapping(address => mapping(uint256 => uint256)) public stakedTokenWeight` - stored weight per staked NFT
+
+**Key Functions**:
+- `setNftWeight(address nft, uint256 weight)` - project only, whitelists + sets weight (first call) or updates weight (subsequent calls)
+- `addRewardToken(address token)` - project only, enables new reward token
+- `removeRewardToken(address token)` - project only, disables token (requires no queued rewards and period finished)
+- `notifyRewardToken(address token, uint256 amount)` - anyone, queues if `totalWeight == 0`, else starts vesting
+- `stakeNFT(address nft, uint256 tokenId)` - validates whitelist, transfers NFT, stores weight, increments `totalWeight` + `stakedWeight[user]`, starts queued rewards if first NFT
+- `unstakeNFT(address nft, uint256 tokenId)` - validates ownership, decrements weights, transfers NFT, pauses all rewards if last NFT
+- `claim(address token)` - updates token reward, transfers pending to user
+
+**Weight-Based Mechanics**:
+- Rewards distributed proportionally to weight, not count
+- Each NFT collection has configurable weight (e.g., rare NFT = 1000, common = 100)
+- Weight stored per staked token to handle mid-stake weight updates
+- Uses `totalWeight` instead of `totalStaked` in reward formulas
+
+**Reward Calculation** (per token, weight-based):
+```solidity
+rewardPerToken[token] = rewardPerTokenStored + ((delta * rewardRate) / totalWeight)
+earned[user][token] = pendingRewards[user][token] + ((stakedWeight[user] * (rewardPerToken[token] - rewardDebt[user][token])) / RATE_SCALE)
+```
+
+**IERC721Receiver**:
+- Implements `onERC721Received()` to accept NFT transfers
+
+**Events**:
+- `RewardTokenAdded`, `RewardTokenRemoved` (added in recent updates)
+- `RewardNotified(address indexed token, uint256 amount)`
+- `NftWhitelisted(address indexed nft, uint256 weight)`
+- `NftWeightUpdated(address indexed nft, uint256 weight)`
+- `NftStaked(address indexed user, address indexed nft, uint256 tokenId, uint256 weight)`
+- `NftUnstaked`, `Claimed`
+
+#### 9. SlashingCouncil.sol
+**Purpose**: Stake-weighted governance for slashing proposals with batch processing.
+
+**Constants**:
+- `uint256 public constant MIN_STAKE = 1 ether` (1 MONA)
+
+**State Variables**:
+- `IERC20 public immutable mona` - MONA token
+- `MatroidRegistry public immutable registry` - registry reference
+- `Treasury public immutable treasury` - treasury reference
+- `uint256 public votingWindow` - voting period after epoch finalization
+- `uint256 public minVoterDivisor` - divisor for minimum voter calculation
+- `uint16 public maxSlashBps` - max slash percentage (basis points)
+- `uint16 public thresholdBps` - voting threshold (basis points)
+- `mapping(uint256 => uint256) public epochTotalWeight` - total `sqrt(stake)` per epoch
+- `mapping(uint256 => mapping(address => mapping(address => uint256))) public lockedStake` - voter stakes
+- `uint256 public nextEpochToFinalize` - sequential finalization tracker
+- `mapping(uint256 => bool) public votingEpochFinalized` - epoch finalization flags
+- `mapping(uint256 => uint256) public finalizedCount` - finalized proposal count per epoch
+- `mapping(uint256 => mapping(address => MatroidLibrary.Proposal)) public proposals` - proposal state
+- `mapping(uint256 => mapping(address => mapping(address => bool))) public voted` - voter participation flags
+- `mapping(uint256 => mapping(address => mapping(address => uint256))) public voteStake` - finalized voter stakes (for rewards)
+- `mapping(uint256 => mapping(address => mapping(address => uint256))) public rewardClaimed` - claimed voter rewards
+- `mapping(uint256 => mapping(address => mapping(address => MatroidLibrary.VoterChoice))) public voterChoices` - voter preferences
+
+**Voting Flow**:
+
+1. **Vote**:
+```solidity
+function vote(uint256 epoch, address project, uint256 amount, uint16 slashBps, bool blacklist) external nonReentrant {
+    // Validates: amount >= MIN_STAKE, slashBps <= maxSlashBps, project not blacklisted, voting window open
+    // Adjusts stake: transfers delta from/to voter
+    // Records choice: slashBps, blacklist flag, active=true
+    // Updates epochTotalWeight with sqrt(stake) delta
+    // Adds voter to proposal.voters array if first vote
+}
+```
+
+2. **Unvote**:
+```solidity
+function unvote(uint256 epoch, address project) external nonReentrant {
+    // Validates: voting window still open
+    // Sets choice.active = false
+    // Refunds stake, decrements epochTotalWeight
+}
+```
+
+3. **Finalize Proposal** (batch):
+```solidity
+function finalizeProposal(uint256 epoch, address project) external {
+    // Can be called after voting window closes
+    // Phase 1 - Tally (batch):
+    //   - Loops proposal.voters from proposal.tallyIndex
+    //   - For each active voter with >= MIN_STAKE:
+    //     - Increments tallyVoterCount, tallyTotalStake, tallyWeight (sqrt(stake))
+    //     - Takes max slashBps, OR blacklist flags
+    //   - Sets tallyComplete when all voters processed
+    // Phase 2 - Execution:
+    //   - Validates: voterCount >= minVoters (uniqueUsers / minVoterDivisor, min 3)
+    //   - Validates: weightFor >= (epochTotalWeight * thresholdBps / 10000)
+    //   - If passed: calls Treasury.applySlash(), sets proposal.passed = true
+    //   - Marks proposal.executed = true
+    //   - Updates votingEpochFinalized when all projects in epoch finalized
+}
+```
+
+4. **Resolve Failure** (batch):
+```solidity
+function resolveFailure(uint256 epoch, address project) external nonReentrant {
+    // Can be called after voting window closes
+    // Calls finalizeProposal first
+    // If proposal failed:
+    //   - Loops voters from proposal.resolveIndex
+    //   - Slashes 10% of each voter's stake
+    //   - Accumulates resolveTotalSlashed
+    //   - Sets proposal.resolved = true when complete
+    //   - Transfers slashed MONA to treasury
+    //   - Calls Treasury.notifySlashReward(epoch, project, projectShare) where projectShare = 50%
+}
+```
+
+5. **Claim Voter Reward**:
+```solidity
+function claimVoterReward(uint256 epoch, address project) external nonReentrant {
+    // Validates: proposal passed
+    // Calculates: entitled = (rewardTotal * voteStake[voter]) / totalVoteStake
+    // Transfers: entitled - claimed
+    // Updates: rewardClaimed[epoch][project][voter] = entitled
+}
+```
+
+6. **Withdraw Stake**:
+```solidity
+function withdrawStake(uint256 epoch, address project) external nonReentrant {
+    // Validates: proposal passed or resolved
+    // Transfers lockedStake to voter
+    // Sets lockedStake = 0
+}
+```
+
+**Batch Processing**:
+- `finalizeProposalBatch(epoch, project, maxVoters)` - limits iteration to `maxVoters` per call
+- `resolveFailureBatch(epoch, project, maxVoters)` - limits iteration to `maxVoters` per call
+- Pass `maxVoters = 0` to process all (may hit gas limit)
+
+**Voter Rewards**:
+- Treasury sends 50% of slashed amount to SlashingCouncil via `notifyVoterReward()`
+- Stored in `proposal.rewardTotal`
+- Distributed proportionally by `voteStake` (not current `lockedStake`, to prevent gaming)
+
+**Events**:
+- `Voted(uint256 indexed epoch, address indexed project, address indexed voter, uint256 weight)`
+- `ProposalExecuted(uint256 indexed epoch, address indexed project, uint16 slashBps, bool blacklist)`
+- `ProposalResolved(uint256 indexed epoch, address indexed project, bool passed)`
+- `VoterRewardNotified`, `VoterRewarded`
+
+## Data Structures (MatroidLibrary.sol)
+
+### Project
+```solidity
+struct Project {
+    bool registered;
+    address project;
+    bytes32 metadata;               // IPFS hash or identifier
+    uint64 registeredAt;
+    uint256 monaIn;                 // lifetime MONA received
+    uint256 monaOut;                // lifetime MONA sent
+    uint256 monaTxCount;            // lifetime MONA transactions
+    uint256 monaUniqueUsers;        // lifetime unique MONA users
+    address projectPool;            // ERC20 staking pool address
+    address projectNftPool;         // NFT staking pool address
+    uint16 globalSplitBps;          // basis points to global pool
+    uint16 projectErc20SplitBps;    // basis points to project ERC20 pool
+    uint16 projectNftSplitBps;      // basis points to project NFT pool
+}
+```
+
+### EpochStats
+```solidity
+struct EpochStats {
+    uint256 monaUniqueUsers;        // unique MONA users this epoch
+    uint256 monaRecurringUsers;     // users active in epoch N and N-1
+    uint256 monaTxCount;            // total MONA transactions
+    uint256 monaTotalVolume;        // total MONA volume
+    uint256 monaCappedTxCount;      // sum of min(userTx, maxTxPerWallet)
+    uint256 monaCappedVolume;       // sum of min(userVol, maxVolumePerWallet)
+    uint256 otherUniqueUsers;       // unique non-MONA users
+    uint256 otherTxCount;           // total non-MONA transactions
+    uint256 otherTokensUsed;        // count of other tokens meeting threshold
+}
+```
+
+### TokenStats
+```solidity
+struct TokenStats {
+    uint256 totalIn;                // lifetime token received
+    uint256 totalOut;               // lifetime token sent
+    uint256 txCount;                // lifetime transactions
+    uint256 uniqueUsers;            // lifetime unique users
+}
+```
+
+### EpochData
+```solidity
+struct EpochData {
+    bool finalized;
+    uint256 totalScore;             // sum of all project scores
+    uint256 activeProjects;         // projects with score > 0
+    uint256 budget;                 // epoch budget
+    uint256 finalizedAt;            // block.timestamp when finalized
+    uint256 totalUniqueUsers;       // sum of all project unique users
+}
+```
+
+### Proposal
+```solidity
+struct Proposal {
+    uint256 weightFor;              // total sqrt(stake) supporting slash
+    uint256 voterCount;             // count of valid voters
+    uint256 totalVoteStake;         // total MONA staked in votes
+    uint256 rewardTotal;            // total voter rewards available
+    uint256 tallyIndex;             // batch tally progress index
+    uint256 tallyWeight;            // accumulator for tally phase
+    uint256 tallyVoterCount;        // accumulator for tally phase
+    uint256 tallyTotalStake;        // accumulator for tally phase
+    uint256 resolveIndex;           // batch resolution progress index
+    uint256 resolveTotalSlashed;    // accumulator for slashed stakes
+    uint16 slashBps;                // final slash percentage
+    uint16 tallySlashBps;           // accumulator for max slash
+    bool blacklist;                 // final blacklist decision
+    bool tallyBlacklist;            // accumulator for blacklist OR
+    bool executed;                  // proposal execution complete
+    bool resolved;                  // failure resolution complete
+    bool passed;                    // proposal passed threshold
+    bool tallyComplete;             // tally phase complete
+    address[] voters;               // list of all voters
+}
+```
+
+### VoterChoice
+```solidity
+struct VoterChoice {
+    uint16 slashBps;                // voter's preferred slash percentage
+    bool blacklist;                 // voter's blacklist vote
+    bool active;                    // vote is active (not unvoted)
+}
+```
+
+### RewardToken
+```solidity
+struct RewardToken {
+    bool enabled;                   // token is active
+    uint256 rewardRate;             // reward per second (scaled 1e18)
+    uint256 lastUpdateTime;         // last accumulator update
+    uint256 periodFinish;           // reward period end timestamp
+    uint256 rewardPerTokenStored;   // accumulator value
+    uint256 queuedRewards;          // rewards waiting for stakers
+}
+```
+
+## Error Handling (MatroidErrors.sol)
+
+34 custom errors:
+- `ZeroAmount()` - amount parameter is zero
+- `ZeroAddress()` - address parameter is zero
+- `NotOwner()` - caller is not owner
+- `NotMatroidKit()` - caller is not kit
+- `AlreadyRegistered()` - project already registered
+- `AlreadySet()` - one-time initializer already called
+- `ProjectNotRegistered()` - project not found
+- `NotContract()` - address has no code
+- `NotClaimer()` - caller not authorized claimer
+- `NotTreasury()` - caller is not treasury
+- `MinStakeNotMet()` - stake below minimum
+- `ClaimNotAvailable()` - claim timing invalid
+- `EpochNotFinalized()` - epoch not finalized yet
+- `InvalidDuration()` - duration parameter invalid
+- `InvalidSplit()` - split percentages invalid
+- `PoolNotSet()` - pool address not configured
+- `NotSlashing()` - caller is not slashing council
+- `VoteWindowClosed()` - voting window closed
+- `InvalidSlash()` - slash parameter invalid
+- `NotProject()` - caller is not project
+- `TokenDisabled()` - token not enabled
+- `TokenExists()` - token already exists
+- `TokenInUse()` - token has active rewards (new)
+- `InsufficientStake()` - stake insufficient for operation
+- `ProjectBlacklisted()` - project is blacklisted
+- `NotWhitelistedNFT()` - NFT not whitelisted
+- `NotNFTOwner()` - caller not NFT owner
+- `NFTAlreadyStaked()` - NFT already staked
+- `NFTNotStaked()` - NFT not staked
+
+## State Machine Diagrams
+
+### Project Lifecycle
+```
+[Deploy Project Contract]
+         |
+         v
+[Call MatroidKit.registerProject(metadata, pool)]
+         |
+         +--[pool=true]--> [StakingFactory creates ProjectStakingPool + ProjectNFTStakingPool]
+         |
+         +--[pool=false]--> [No pools created]
+         |
+         v
+[Project.registered = true, added to _projectList]
+         |
+         v
+[Optional: MatroidRegistry.createProjectPool() if pools not created]
+         |
+         v
+[MatroidRegistry.setRewardSplits(global, erc20, nft)] (sum <= 10000)
+         |
+         v
+[MatroidRegistry.setClaimer(teamWallet, true)] (authorize claimers)
+         |
+         v
+[MatroidKit.matroidIn/Out(user, token, amount)] (record flows)
+         |
+         v
+[Epoch N ends] --> [Treasury.finalizeEpoch(N)] --> [EpochData stored]
+         |
+         v
+[SlashingCouncil voting window] (epochData.finalizedAt to finalizedAt + votingWindow)
+         |
+         v
+[Voting window closes] --> [SlashingCouncil.finalizeProposal(N, project)]
+         |
+         +--[proposal passed]--> [Treasury.applySlash()]
+         |                            |
+         |                            v
+         |                       [_epochSlashed = true, _epochSlashBps set]
+         |
+         +--[proposal failed]--> [SlashingCouncil.resolveFailure()]
+                                      |
+                                      v
+                                 [Voters slashed 10%, 50% to treasury, 50% to project]
+         |
+         v
+[Treasury.claim(N, project)] (by authorized claimer)
+         |
+         v
+[Compute claimable = (budget * score) / totalScore]
+         |
+         v
+[Apply slash if _epochSlashed && !_slashResolved]
+         |
+         v
+[Split claimable:]
+    - globalShare --> GlobalStakingPool.notifyReward()
+    - projectErc20Share --> ProjectStakingPool.notifyRewardToken(MONA)
+    - projectNftShare --> ProjectNFTStakingPool.notifyRewardToken(MONA)
+    - claimerShare --> direct transfer to claimer
+         |
+         v
+[totalDistributed += claimableAmount]
+         |
+         v
+[Epoch N+1 starts automatically]
+```
+
+### Staking Pool Reward Flow (ERC20 + NFT)
+```
+[No one staked] --> [notifyRewardToken(token, amount)] --> [queuedRewards += amount]
+         |
+         v
+[User stakes] (first staker)
+         |
+         v
+[_updateRewards(user)] --> [rewardPerTokenStored updated for all tokens]
+         |
+         v
+[totalStaked/totalWeight += amount/weight]
+         |
+         v
+[_startQueuedRewards()] --> [For each token with queuedRewards > 0:]
+         |                        - Merge queued + leftover from previous period
+         |                        - rewardRate = (total * 1e18) / rewardDuration
+         |                        - periodFinish = block.timestamp + rewardDuration
+         |
+         v
+[Rewards vest linearly over rewardDuration]
+         |
+         v
+[User claims] --> [_updateRewardToken(user, token)]
+         |              - rewardPerToken = stored + ((delta * rewardRate) / totalStaked)
+         |              - earned = pending + ((staked * (rewardPerToken - debt)) / 1e18)
+         |
+         v
+[Transfer earned to user, set pending = 0, debt = rewardPerToken]
+         |
+         v
+[Last user unstakes]
+         |
+         v
+[_pauseRewards()] --> [For each token:]
+                           - Calculate remaining = ((periodFinish - now) * rewardRate) / 1e18
+                           - queuedRewards += remaining
+                           - rewardRate = 0, periodFinish = now
+```
+
+### Slashing Voting Lifecycle
+```
+[Epoch N ends] --> [Treasury.finalizeEpoch(N)] --> [epochData.finalized = true, finalizedAt set]
+         |
+         v
+[Voting window opens: finalizedAt to finalizedAt + votingWindow]
+         |
+         v
+[Council members call SlashingCouncil.vote(N, project, amount, slashBps, blacklist)]
+         |
+         +--[First vote for project]--> [proposal.voters.push(voter)]
+         |
+         v
+[Transfer stake delta, store choice, update epochTotalWeight with sqrt(amount)]
+         |
+         v
+[Optional: voter calls unvote(N, project) during window]
+         |
+         v
+[Voting window closes]
+         |
+         v
+[Anyone calls SlashingCouncil.finalizeProposal(N, project)]
+         |
+         v
+[Batch tally phase:]
+    - Loop voters from proposal.tallyIndex
+    - For each active voter with stake >= MIN_STAKE:
+        - tallyVoterCount++
+        - tallyTotalStake += lockedStake
+        - tallyWeight += sqrt(lockedStake)
+        - voteStake[voter] = lockedStake (lock in for rewards)
+        - tallySlashBps = max(tallySlashBps, choice.slashBps)
+        - tallyBlacklist |= choice.blacklist
+    - tallyComplete = true when all voters processed
+         |
+         v
+[Execution phase:]
+    - voterCount = tallyVoterCount
+    - weightFor = tallyWeight
+    - slashBps = tallySlashBps
+    - blacklist = tallyBlacklist
+    - minVoters = max(uniqueUsers / minVoterDivisor, 3)
+    - requiredWeight = epochTotalWeight * thresholdBps / 10000
+         |
+         +--[voterCount >= minVoters && weightFor >= requiredWeight]--> [PASSED]
+         |                                                                    |
+         |                                                                    v
+         |                                                         [Treasury.applySlash(N, project, slashBps, blacklist)]
+         |                                                                    |
+         |                                                                    v
+         |                                                         [_epochSlashed = true, _epochSlashBps set]
+         |                                                                    |
+         |                                                                    v
+         |                                                         [proposal.passed = true]
+         |
+         +--[voterCount < minVoters || weightFor < requiredWeight]--> [FAILED]
+                                                                            |
+                                                                            v
+                                                                [Anyone calls SlashingCouncil.resolveFailure(N, project)]
+                                                                            |
+                                                                            v
+                                                                [Batch resolution phase:]
+                                                                    - Loop voters from proposal.resolveIndex
+                                                                    - slashAmount = lockedStake * 1000 / 10000 (10%)
+                                                                    - lockedStake -= slashAmount
+                                                                    - resolveTotalSlashed += slashAmount
+                                                                            |
+                                                                            v
+                                                                [Transfer resolveTotalSlashed to Treasury]
+                                                                            |
+                                                                            v
+                                                                [Treasury.notifySlashReward(N, project, resolveTotalSlashed / 2)]
+                                                                            |
+                                                                            v
+                                                                [proposal.resolved = true]
+         |
+         v
+[Claim phase:]
+    - If passed: voters call claimVoterReward(N, project) to get share of slash rewards
+    - voters call withdrawStake(N, project) to recover stake (minus slash if failed)
+```
+
+## Key Algorithms
+
+### Epoch Calculation
+```solidity
+currentEpoch = (block.timestamp - deployedAt) / epochDuration
+epochStart = deployedAt + (epoch * epochDuration)
+epochEnd = epochStart + epochDuration
+```
+
+### Flow Recording with Balance Validation
+```solidity
+function recordFlow(address project, address user, address token, uint256 amount, bool isIn) {
+    IERC20 asset = IERC20(token)
+    address receiver = isIn ? project : user
+    uint256 beforeBal = asset.balanceOf(receiver)
+
+    if (isIn) {
+        asset.safeTransferFrom(user, project, amount)
+    } else {
+        asset.safeTransferFrom(project, user, amount)
+    }
+
+    uint256 afterBal = asset.balanceOf(receiver)
+    require(afterBal > beforeBal)
+    uint256 actualAmount = afterBal - beforeBal  // handles fee-on-transfer
+
+    // Update stats with actualAmount...
+}
+```
+
+### Recurring User Detection
+```solidity
+if (!_epochMonaUserSeen[project][epoch][user]) {
+    _epochMonaUserSeen[project][epoch][user] = true
+    _epochStats[project][epoch].monaUniqueUsers += 1
+
+    if (epoch > 0 && _epochMonaUserSeen[project][epoch - 1][user]) {
+        _epochStats[project][epoch].monaRecurringUsers += 1
+    }
+}
+```
+
+### Capped Transaction/Volume Accumulation
+```solidity
+uint256 prevTx = _epochMonaUserTxCount[project][epoch][user]
+uint256 nextTx = prevTx + 1
+_epochMonaUserTxCount[project][epoch][user] = nextTx
+
+uint256 cappedPrevTx = prevTx > maxTxPerWallet ? maxTxPerWallet : prevTx
+uint256 cappedNextTx = nextTx > maxTxPerWallet ? maxTxPerWallet : nextTx
+_epochStats[project][epoch].monaCappedTxCount += (cappedNextTx - cappedPrevTx)
+
+// Same pattern for volume capping
+```
+
+### Other-Token Threshold Counting
+```solidity
+// Per flow recording:
+if (!_epochOtherTokenUserSeen[project][epoch][token][user]) {
+    _epochOtherTokenUserSeen[project][epoch][token][user] = true
+    _epochOtherTokenUniqueUsers[project][epoch][token] += 1
+}
+
+if (!_epochTokenProjectSeen[epoch][token][project]) {
+    _epochTokenProjectSeen[epoch][token][project] = true
+    _epochTokenProjectCount[epoch][token] += 1
+}
+
+// Token qualifies if:
+if (_epochOtherTokenUniqueUsers[project][epoch][token] >= 10 &&
+    _epochTokenProjectCount[epoch][token] >= 2 &&
+    !_epochOtherTokenCounted[project][epoch][token]) {
+    _epochOtherTokenCounted[project][epoch][token] = true
+    _epochStats[project][epoch].otherTokensUsed += 1
+}
+```
+
+### Reward Per Token Accumulator (Staking Pools)
+```solidity
+function _rewardPerToken(address token) internal view returns (uint256) {
+    if (totalStaked == 0) return rewardPerTokenStored
+    uint256 delta = _lastTimeRewardApplicable(token) - lastUpdateTime
+    return rewardPerTokenStored + ((delta * rewardRate) / totalStaked)
+}
+
+function _earned(address user, address token) internal view returns (uint256) {
+    uint256 deltaAccumulator = rewardPerTokenStored - rewardDebt[user][token]
+    return pendingRewards[user][token] + ((staked[user] * deltaAccumulator) / 1e18)
+}
+```
+
+### Reward Stream Calculation
+```solidity
+function _startRewardStream(address token, uint256 amount) {
+    uint256 total = amount + queuedRewards
+
+    // Merge leftover from previous period if not finished
+    if (block.timestamp < periodFinish) {
+        uint256 remaining = periodFinish - block.timestamp
+        uint256 leftover = (remaining * rewardRate) / 1e18
+        total += leftover
+    }
+
+    rewardRate = (total * 1e18) / rewardDuration
+    uint256 distributed = (rewardRate * rewardDuration) / 1e18
+    queuedRewards = total - distributed  // dust from rounding
+    periodFinish = block.timestamp + rewardDuration
+}
+```
+
+### Voting Weight Calculation
+```solidity
+function _sqrt(uint256 y) internal pure returns (uint256 z) {
+    if (y == 0) return 0
+    z = y
+    uint256 x = (y / 2) + 1
+    while (x < z) {
+        z = x
+        x = (y / x + x) / 2
+    }
+}
+
+weight = _sqrt(stakeAmount)
+epochTotalWeight[epoch] += weight
+```
+
+## Security Considerations
+
+### Access Control
+- **MatroidKit**: Only MatroidKit can call `MatroidRegistry.registerProject()` and `recordFlow()`
+- **Owner**: Only owner can call `setMatroidKit()`, `setTargetTotal()`, `setTargetDuration()`, `setBudgets()`, `setSlashingContract()`
+- **Project**: Only project address can call `setRewardSplits()`, `setClaimer()`, `addRewardToken()`, `removeRewardToken()`, `setNftWeight()`
+- **Claimer**: Only authorized claimers can call `Treasury.claim()`
+- **Treasury**: Only treasury can call `SlashingCouncil.notifyVoterReward()`
+- **SlashingCouncil**: Only slashing council can call `Treasury.applySlash()`, `notifySlashReward()`
+
+### Reentrancy Protection
+- All external state-changing functions in Treasury, SlashingCouncil, and staking pools use `nonReentrant` modifier
+- MatroidRegistry uses `nonReentrant` on `recordFlow()`
+
+### Balance Validation
+- All token transfers validated with before/after balance checks to handle fee-on-transfer tokens
+- Reverts if `afterBal <= beforeBal`
+
+### Integer Overflow Protection
+- Solidity 0.8.28 has built-in overflow/underflow checks
+- All arithmetic operations safe by default
+
+### Epoch Timing
+- Epoch finalization requires `block.timestamp > epochEnd`
+- Claims require `block.timestamp > epochEnd`
+- Claims require `block.timestamp > epochData.finalizedAt + votingWindow` (if slashing enabled)
+- Claims require `block.timestamp <= epochEnd + claimWindow`
+- Voting requires `block.timestamp > epochData.finalizedAt && block.timestamp <= epochData.finalizedAt + votingWindow`
+
+### Stake Locking
+- Voter stakes locked in SlashingCouncil until proposal finalized or resolved
+- Cannot withdraw during voting window
+- Can unvote during voting window to recover stake
+
+### Batch Processing Gas Safety
+- SlashingCouncil tally and resolution use batch processing with `maxVoters` parameter
+- Prevents gas limit issues with many voters
+- Pass `maxVoters = 0` to process all (may hit gas limit)
+
+### Reward Token Removal Safety
+- `removeRewardToken()` requires no queued rewards and period finished
+- Prevents loss of unprocessed rewards
+
+### Split Validation
+- Reward splits must sum to ≤10000 (100%)
+- Cannot set ERC20 split without ERC20 pool
+- Cannot set NFT split without NFT pool
+
+## Gas Optimization Strategies
+
+### Batch Operations
+- `finalizeProposalBatch()` and `resolveFailureBatch()` allow chunked processing
+- Large voter sets can be processed across multiple transactions
+
+### Caching
+- `totalStaked` and `totalWeight` cached instead of summing user balances
+- `rewardPerTokenStored` accumulator avoids recalculating entire history
+
+### Packed Structs
+- `Project.registeredAt` uses `uint64` (sufficient until year 584 billion)
+- `Project.globalSplitBps`, `projectErc20SplitBps`, `projectNftSplitBps` use `uint16` (max 65535 = 655.35%)
+
+### View Functions
+- Scoring, reward calculations, epoch bounds all view functions (no gas cost for external callers)
+
+### Minimal Storage
+- Token flow validation uses balance checks instead of storing full transfer history
+- Only aggregated stats stored, not individual transaction records
+
+## Deployment Parameters (Example Production Values)
+
+```solidity
+// GlobalStakingPool
+monaToken: 0x... // MONA ERC20 address
+rewardDurationSeconds: 604800 // 7 days
+
+// StakingFactory
+rewardDurationSeconds: 604800 // 7 days
+
+// MatroidRegistry
+monaToken: 0x...
+stakingFactoryAddress: 0x... // from StakingFactory deployment
+epochDurationSeconds: 604800 // 7 days
+maxTxPerWalletCount: 100 // cap at 100 tx per user per epoch
+maxVolumePerWalletAmount: 1000000000000000000000 // cap at 1000 MONA per user per epoch
+
+// MatroidScorer
+registryAddress: 0x... // from MatroidRegistry deployment
+alphaScaled: 100000000000000000 // 0.1 * 1e18 = 10% bonus per other-token index point
+
+// Treasury
+monaToken: 0x...
+registryAddress: 0x...
+scorerAddress: 0x...
+globalPoolAddress: 0x... // from GlobalStakingPool deployment
+claimWindowSeconds: 2419200 // 4 weeks
+targetTotalAmount: 100000000000000000000000 // 100k MONA target distribution
+targetDurationSeconds: 31536000 // 1 year
+baseBudgetAmount: 1000000000000000000000 // 1k MONA base budget per epoch
+perProjectBudgetAmount: 100000000000000000000 // 100 MONA per active project per epoch
+
+// SlashingCouncil
+monaToken: 0x...
+registryAddress: 0x...
+treasuryAddress: 0x... // from Treasury deployment
+votingWindowSeconds: 259200 // 3 days
+minVoterDivisorValue: 100 // minVoters = uniqueUsers / 100, min 3
+maxSlashBpsValue: 5000 // max 50% slash
+thresholdBpsValue: 5000 // 50% of total weight required to pass
+```
+
+## Integration Examples
+
+### Project Integration (Solidity)
+```solidity
+contract MyProject {
+    IMatroidKit public kit;
+    IMatroidRegistry public registry;
+    address public erc20Pool;
+    address public nftPool;
+
+    constructor(address _kit, address _registry) {
+        kit = IMatroidKit(_kit);
+        registry = IMatroidRegistry(_registry);
+
+        // Register project and create pools
+        kit.registerProject(keccak256("MyProject v1"), true);
+
+        // Set reward splits: 30% global, 50% ERC20 pool, 20% NFT pool
+        registry.setRewardSplits(3000, 5000, 2000);
+
+        // Authorize claimer
+        registry.setClaimer(msg.sender, true);
+
+        // Get pool addresses
+        (erc20Pool, nftPool, , , ) = registry.projectRewards(address(this));
+
+        // Whitelist NFTs
+        IProjectNFTStakingPool(nftPool).setNftWeight(0xNFT1, 1000);
+        IProjectNFTStakingPool(nftPool).setNftWeight(0xNFT2, 500);
+    }
+
+    function userDeposit(address token, uint256 amount) external {
+        // User approves this contract for token
+        IERC20(token).transferFrom(msg.sender, address(this), amount);
+
+        // Approve registry for recording
+        IERC20(token).approve(address(registry), amount);
+
+        // Record flow (transfers happen in registry)
+        kit.matroidIn(msg.sender, token, amount);
+    }
+
+    function userWithdraw(address token, uint256 amount) external {
+        // This contract approves registry
+        IERC20(token).approve(address(registry), amount);
+
+        // Record flow (transfers happen in registry)
+        kit.matroidOut(msg.sender, token, amount);
+    }
+}
+```
+
+### Staker Integration (JavaScript/TypeScript)
+```typescript
+// Stake in global pool
+const globalPool = new ethers.Contract(globalPoolAddress, GlobalStakingPoolABI, signer)
+await mona.approve(globalPoolAddress, amount)
+await globalPool.stake(amount)
+
+// Stake in project ERC20 pool
+const projectPool = new ethers.Contract(projectPoolAddress, ProjectStakingPoolABI, signer)
+await mona.approve(projectPoolAddress, amount)
+await projectPool.stake(amount)
+
+// Stake NFT in project NFT pool
+const nftPool = new ethers.Contract(nftPoolAddress, ProjectNFTStakingPoolABI, signer)
+await nft.approve(nftPoolAddress, tokenId)
+await nftPool.stakeNFT(nftAddress, tokenId)
+
+// Claim rewards from project pool (multi-token)
+const rewardTokenCount = await projectPool.rewardTokenCount()
+for (let i = 0; i < rewardTokenCount; i++) {
+    const token = await projectPool.rewardTokenAt(i)
+    await projectPool.claim(token)
+}
+```
+
+### Council Member Integration
+```typescript
+// Vote on proposal
+const council = new ethers.Contract(councilAddress, SlashingCouncilABI, signer)
+await mona.approve(councilAddress, stakeAmount)
+await council.vote(epoch, projectAddress, stakeAmount, slashBps, blacklist)
+
+// Finalize proposal (batch)
+await council.finalizeProposalBatch(epoch, projectAddress, 100) // process 100 voters per call
+
+// Claim voter reward
+await council.claimVoterReward(epoch, projectAddress)
+
+// Withdraw stake
+await council.withdrawStake(epoch, projectAddress)
+```
+
+## Testing Checklist
+
+### Core Flow Recording
+- [x] MONA flow in/out updates all stats correctly
+- [x] Other-token flow in/out updates stats
+- [x] Balance validation catches fee-on-transfer tokens
+- [x] User uniqueness tracking works
+- [x] Recurring user detection across epochs
+- [x] Capped tx/volume accumulation
+- [x] Other-token threshold (≥2 projects, ≥10 users)
+
+### Scoring
+- [x] Score returns 0 for no activity
+- [x] Score increases with more users
+- [x] Retention bonus applied correctly
+- [x] Activity (log2) scaling
+- [x] Concentration rewards distributed volume
+- [x] Other-token bonus applied
+- [x] Fixed-point math precision
+
+### Treasury
+- [x] Epoch finalization
+- [x] Budget calculation (dynamic + schedule + balance)
+- [x] Claim with reward splits
+- [x] Slash application
+- [x] Claim expiry and sweep
+- [x] Distribution start timestamp
+
+### Staking Pools
+- [x] Stake/unstake with reward updates
+- [x] Queued rewards when no stakers
+- [x] Auto-start on first stake
+- [x] Auto-pause on last unstake
+- [x] Multi-token rewards (ProjectStaking + ProjectNFT)
+- [x] NFT weight-based rewards
+- [x] Add/remove reward tokens
+- [x] Reward vesting over duration
+
+### Slashing Council
+- [x] Vote with stake transfer
+- [x] Unvote during window
+- [x] Batch tally processing
+- [x] Proposal pass/fail thresholds
+- [x] Batch failure resolution
+- [x] Voter slashing (10%)
+- [x] Voter reward distribution
+- [x] Stake withdrawal after finalization
+
+### Integration
+- [x] Project registration with pool creation
+- [x] Reward split configuration
+- [x] Claimer authorization
+- [x] Multi-epoch tracking
+- [x] Cross-contract interactions
+- [x] Access control enforcement
+- [x] Reentrancy protection
+
+## Glossary
+
+- **Epoch**: Fixed time period (default 1 week) for activity aggregation and reward distribution
+- **Flow**: Token transfer in or out of a project, recorded via MatroidKit
+- **Score**: On-chain calculated metric representing project activity quality and quantity
+- **Claimer**: Address authorized by project to claim epoch rewards
+- **Slash**: Penalty reducing or eliminating project's epoch reward
+- **Blacklist**: Permanent 100% slash, project can never claim again
+- **Basis Points (bps)**: 1/100th of a percent (10000 bps = 100%)
+- **Reward Split**: Percentage allocation of epoch reward between global pool, project pools, and claimer
+- **Queued Rewards**: Rewards waiting to vest until stakers are present
+- **Weight**: Multiplier for NFT staking rewards based on rarity/value
+- **Voting Power**: `sqrt(stake)` used for slashing council votes
+- **Tally**: Batch counting of votes to determine proposal outcome
+- **Resolution**: Batch processing of failed proposal penalties
+- **Accumulator**: Running total (rewardPerToken) for fair reward distribution
+- **Debt**: Per-user snapshot of accumulator at last interaction

@@ -1,112 +1,44 @@
 "use client";
 
 import { FunctionComponent, JSX } from "react";
-import Box from "./Box";
-import Frame from "./Frame";
+import { MdOutlineArrowOutward } from "react-icons/md";
+import Caja from "./Caja";
+import { usePathname } from "next/navigation";
 
-const CreateEntry: FunctionComponent<{ dict: any }> = ({
+const CreateEntry: FunctionComponent<{ dict: any; lang: string }> = ({
   dict,
+  lang,
 }): JSX.Element => {
+  const path = usePathname();
   return (
-    <div className="relative w-full h-full col-start-1 grid grid-flow-row">
-      <div
-        className={`relative w-[90vw] h-full bg-gradient-to-r from-offBlack via-black/70 to-offBlack rounded-lg flex flex-row pb-10 gap-4 place-self-center row-start-1 pt-4 px-4`}
-      >
+    <Caja title={`*${dict?.create}*`}>
+      <div className="relative w-full overflow-y-scroll h-[20rem] flex text-center items-center justify-start p-6 font-earl flex-col gap-6">
         <div
-          className={`relative w-fit h-full grid-flow-col auto-cols-auto gap-8 grid`}
-        >
-          <div className="relative row-start-1 place-self-start w-fit h-fit grid grid-flow-row auto-rows-auto gap-6">
-            <Box
-              image={"QmdBxkJrAmEbn3dFTubcdaRToXnjwnz8ZqHp27p9mz1cDm"}
-              col={"1"}
-              row={"1"}
-              self={"start"}
-              justify={"start"}
-              border
-            />
-            <Box
-              image={"QmYC8rKZWkZFVtEBJq9mEPVYev5s7ckYkivEKVrobSbxsf"}
-              col={"1"}
-              row={"2"}
-              self={"start"}
-              justify={"start"}
-              bgColor
-              border
-            />
+          className={`relative text-center w-fit h-fit flex`}
+          dir={path.includes("/ar") ? "rtl" : "ltr"}
+          dangerouslySetInnerHTML={{
+            __html: dict?.createLogic1?.replaceAll("{LANG}", lang),
+          }}
+        ></div>
+        <div className="relative items-center justify-center w-fit h-fit flex flex-col gap-3">
+          <div className="relative text-center w-fit h-fit flex">
+            {dict?.createLogic2}
           </div>
-          <Box
-            image={"QmVLBNJAC6MQmB3Z35sd17T9hbrK9zksRk4o7GRdfYiV89"}
-            col={"1"}
-            row={"2"}
-            self={"end"}
-            justify={"start"}
-            contain
-            rounded
-          />
-        </div>
-        <div className="relative w-full h-fit flex flex-col gap-6 place-self-center">
           <div
-            className={`relative row-start-1 w-full h-fit grid-flow-col auto-cols-auto self-start justify-between grid`}
+            className="relative w-fit h-fit gap-2 flex items-center justify-center text-center flex-row cursor-pointer hover:opacity-80"
+            onClick={() =>
+              window.open("https://matroid.digitalax.xyz/llms.txt")
+            }
           >
-            <Box
-              image={"QmdiQ9NdH95kSgysocBj7uKbsVjPujPiavozihXRPYt1g5"}
-              col={"1"}
-              row={"1"}
-              self={"center"}
-              justify={"start"}
-              bgColor
-              border
-            />
-            <Box
-              image={"QmTf9xQZfcCX6ThsgwbuxC2cSYDNUiVzD5RKRqoBGkhjbo"}
-              col={"2"}
-              row={"1"}
-              self={"center"}
-              justify={"end"}
-              bgColor
-              border
-            />
-          </div>
-          <Frame title={`*${dict?.lensStaking}*`}>
-            <div className="relative w-full h-full min-h-[30rem] flex text-center items-center justify-center p-2 font-earl">
-              {dict?.comingSoon}
-            </div>
-          </Frame>
-        </div>
-        <div
-          className={`relative w-fit h-full grid grid-flow-col auto-cols-auto gap-8 grid`}
-        >
-          <Box
-            image={"Qme799mCrdfV5F35gbQzfresp8b6MZva8M72ydXoA9APkr"}
-            col={"1"}
-            row={"1"}
-            self={"start"}
-            justify={"end"}
-            bgColor
-            border
-          />
-          <div className="relative row-start-2 place-self-end w-fit h-fit grid grid-flow-row auto-rows-auto gap-6">
-            <Box
-              image={"Qmdf4iGgMMrj4gAQy7DDaaDZEKet3DdxQrXwJkXYoSePK7"}
-              col={"1"}
-              row={"1"}
-              self={"end"}
-              justify={"end"}
-              rounded
-              border
-            />
-            <Box
-              image={"QmdBxkJrAmEbn3dFTubcdaRToXnjwnz8ZqHp27p9mz1cDm"}
-              col={"1"}
-              row={"2"}
-              self={"end"}
-              justify={"end"}
-              border
+            <div className="relative w-fit h-fit flex">LLMS.txt</div>
+            <MdOutlineArrowOutward
+              className="relative w-fit h-fit flex"
+              color="black"
             />
           </div>
         </div>
       </div>
-    </div>
+    </Caja>
   );
 };
 

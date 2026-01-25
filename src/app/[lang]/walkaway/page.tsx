@@ -1,9 +1,8 @@
 import { Metadata } from "next";
 import { LOCALES } from "@/app/lib/constants";
 import { tParams } from "../layout";
-import { getDictionary } from "../[lang]/dictionaries";
-import InfoEntry from "../components/Common/modules/InfoEntry";
-import Wrapper from "../components/Common/modules/Wrapper";
+import { getDictionary } from "../dictionaries";
+import WalkEntry from "@/app/components/Common/modules/WalkEntry";
 
 export async function generateMetadata({
   params,
@@ -11,11 +10,11 @@ export async function generateMetadata({
   params: tParams;
 }): Promise<Metadata> {
   const { lang } = await params;
-  const canonical = `https://matroid.digitalax.xyz/${lang}/info/`;
+  const canonical = `https://matroid.digitalax.xyz/${lang}/walkaway/`;
 
   return {
     title: {
-      default: "Matroid | Info | DIGITALAX",
+      default: "Matroid | Walkaway | DIGITALAX",
       template: "%s | DIGITALAX",
     },
     description: "To pass the walkaway test. And into another forest we go.",
@@ -23,17 +22,17 @@ export async function generateMetadata({
       canonical,
       languages: LOCALES.reduce(
         (acc, item) => {
-          acc[item] = `https://matroid.digitalax.xyz/${item}/info/`;
+          acc[item] = `https://matroid.digitalax.xyz/${item}/walkaway/`;
           return acc;
         },
         {} as { [key: string]: string },
       ),
     },
     openGraph: {
-      title: "Matroid | Info",
+      title: "Matroid | Walkaway",
       description: "To pass the walkaway test. And into another forest we go.",
       url: canonical,
-      siteName: "Matroid",
+      siteName: "Matroid | Walkaway",
       images: [
         {
           url: "https://matroid.digitalax.xyz/opengraph-image.png",
@@ -42,7 +41,7 @@ export async function generateMetadata({
     },
     twitter: {
       card: "summary_large_image",
-      title: "Matroid | Info",
+      title: "Matroid | Walkaway",
       description: "To pass the walkaway test. And into another forest we go.",
       site: "@digitalax_",
       creator: "@digitalax_",
@@ -50,7 +49,9 @@ export async function generateMetadata({
     },
   };
 }
-export default async function Info() {
-  const dict = await (getDictionary as (locale: any) => Promise<any>)("en");
-  return <Wrapper page={<InfoEntry dict={dict} lang="en" />} dict={dict} />;
+
+export default async function Walkaway({ params }: { params: tParams }) {
+  const { lang } = await params;
+  const dict = await (getDictionary as (locale: any) => Promise<any>)(lang);
+  return <WalkEntry dict={dict} />;
 }

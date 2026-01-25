@@ -53,5 +53,5 @@ export async function generateMetadata({
 export default async function Create({ params }: { params: tParams }) {
   const { lang } = await params;
   const dict = await (getDictionary as (locale: any) => Promise<any>)(lang);
-  return <CreateEntry dict={dict} />;
+  return <CreateEntry dict={dict} lang={lang} />;
 }

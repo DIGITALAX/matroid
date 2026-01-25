@@ -291,3 +291,16 @@ html::-webkit-scrollbar-thumb:active {
   background: conic-gradient(#2a36f6, #0714d6, #0710a2, #0a15c7, #2a36f6);
   opacity: 0.4;
 }
+
+div::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+div::-webkit-scrollbar-track:active {
+  background-color: transparent !important;
+}
+
+div::-webkit-scrollbar-thumb:active {
+  background-color: transparent !important;
+}

@@ -23,7 +23,7 @@ export async function generateMetadata({
       canonical,
       languages: LOCALES.reduce(
         (acc, item) => {
-          acc[item] = `https://staking.digitalax.xyz/${item}/create/`;
+          acc[item] = `https://matroid.digitalax.xyz/${item}/create/`;
           return acc;
         },
         {} as { [key: string]: string },
@@ -50,7 +50,7 @@ export async function generateMetadata({
     },
   };
 }
-export default async function Home() {
+export default async function Create() {
   const dict = await (getDictionary as (locale: any) => Promise<any>)("en");
-  return <Wrapper page={<CreateEntry dict={dict} />} dict={dict} />;
+  return <Wrapper page={<CreateEntry dict={dict} lang="en" />} dict={dict} />;
 }

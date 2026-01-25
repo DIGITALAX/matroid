@@ -6,16 +6,18 @@ import { FrameProps } from "../types/create.types";
 
 const FrameIcon = ({ image }: { image?: string }) => {
   return (
-    <div className="relative col-start-1 border-4 w-10 h-10 md:w-12 md:h-12 border-black bg-yell grid grid-flow-row auto-rows-auto p-px self-center justify-self-start">
-      {image && (
-        <Image
-          src={`${INFURA_GATEWAY}/ipfs/${image}`}
-          alt="frame icon"
-          fill
-          className="absolute object-cover object-center"
-          draggable={false}
-        />
-      )}
+    <div className="relative col-start-1 border-4 w-fit h-fit border-black bg-yell grid grid-flow-row auto-rows-auto p-px self-center justify-self-start">
+      <div className="relative w-6 h-6 flex">
+        {image && (
+          <Image
+            src={`${INFURA_GATEWAY}/ipfs/${image}`}
+            alt="frame icon"
+            fill
+            className="absolute object-cover object-center"
+            draggable={false}
+          />
+        )}
+      </div>
       <div className="relative row-start-1 w-full h-1 bg-white justify-self-center self-start"></div>
       <div className="relative row-start-2 w-2/3 justify-self-center self-end bg-black border border-white h-1.5"></div>
     </div>
@@ -24,7 +26,7 @@ const FrameIcon = ({ image }: { image?: string }) => {
 
 const FrameLines = () => {
   return (
-    <div className="relative w-24 md:w-40 lg:w-60 h-full col-start-2 grid grid-flow-row auto-rows-auto gap-2 place-self-center">
+    <div className="relative w-full h-full col-start-2 grid grid-flow-row auto-rows-auto gap-2 place-self-center">
       <div className="relative w-full h-2 bg-white border-b-2 border-dcomp row-start-1 place-self-center"></div>
       <div className="relative w-full h-2 bg-white border-b-2 border-dcomp row-start-2 place-self-center"></div>
       <div className="relative w-full h-2 bg-white border-b-2 border-dcomp row-start-3 place-self-center"></div>

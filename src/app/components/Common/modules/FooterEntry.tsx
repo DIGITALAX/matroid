@@ -27,7 +27,7 @@ const FooterEntry: FunctionComponent<{ dict: any }> = ({ dict }) => {
   };
 
   return (
-    <div className="absolute bottom-0 w-full h-fit flex items-center justify-center flex-row gap-3 mt-auto">
+    <div className="relative w-full h-fit flex items-center justify-center flex-row gap-3 pt-6">
       <div className="relative text-white font-dosis uppercase w-fit h-fit flex items-center justify-center flex-row gap-2">
         <div
           className="relative flex items-center justify-center w-fit h-fit active:scale-95 cursor-pointer"

@@ -12,6 +12,7 @@ export type BoxProps = {
 
 export type ActionButtonProps = {
   label: string;
+  connect?: boolean;
   onClick?: () => void;
   disabled?: boolean;
   size?: "sm" | "md";

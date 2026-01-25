@@ -1,6 +1,6 @@
 import { CoreContractAddresses } from "../components/Common/types/common.types";
 
-export const LOCALES: string[] = ["en", "es"];
+export const LOCALES: string[] = ["en", "es", "pt", "ar"];
 
 export const INFURA_GATEWAY: string = "https://thedial.infura-ipfs.io";
 export const INFURA_GATEWAY_INTERNAL: string =

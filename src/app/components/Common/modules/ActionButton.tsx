@@ -17,6 +17,7 @@ const ActionButton = ({
   className,
   type = "button",
   showIcon = true,
+  connect,
 }: ActionButtonProps) => {
   return (
     <button
@@ -29,14 +30,18 @@ const ActionButton = ({
         src={`${INFURA_GATEWAY}/ipfs/QmTLN24oXMbEj3QgHX7dD3GWnYwL2GqsP16yvLzm29bk5X`}
         alt="button background"
         fill
-        className="absolute object-cover object-center"
+        className={`absolute object-cover object-center ${connect && "rounded-md"}`}
         draggable={false}
       />
       <div
-        className={`relative w-full h-full col-start-1 grid grid-flow-col auto-cols-auto gap-3 rounded-tr-md border-white border-t-2 border-r-2 ${sizeClasses[size]}`}
+        className={`relative w-full h-full flex flex-row items-center justify-center gap-3  ${
+          connect
+            ? "rounded-md px-2 py-1 text-sm"
+            : `rounded-tr-md border-white border-t-2 border-r-2  ${sizeClasses[size]}`
+        }`}
       >
         {showIcon && (
-          <span className="relative col-start-1 place-self-center w-fit h-fit text-white">
+          <span className="relative flex items-center justify-center w-fit h-fit text-white">
             <svg
               stroke="currentColor"
               fill="currentColor"
@@ -50,7 +55,7 @@ const ActionButton = ({
             </svg>
           </span>
         )}
-        <span className="relative col-start-2 place-self-center w-fit h-fit text-white font-digiB uppercase tracking-[0.12em]">
+        <span className="relative flex items-center justify-center w-fit h-fit text-white font-digiB uppercase tracking-[0.12em]">
           {label}
         </span>
       </div>

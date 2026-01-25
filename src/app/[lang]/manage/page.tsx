@@ -50,7 +50,7 @@ export async function generateMetadata({
   };
 }
 
-export default async function Info({ params }: { params: tParams }) {
+export default async function Manage({ params }: { params: tParams }) {
   const { lang } = await params;
   const dict = await (getDictionary as (locale: any) => Promise<any>)(lang);
   return <ManageEntry dict={dict} />;

@@ -116,7 +116,7 @@ export default function RootLayout({
       </head>
       <body>
         <Providers>
-          <div className="relative w-full flex min-h-screen justify-between p-6 bg-emu flex-col">
+          <div className="relative w-full flex min-h-screen justify-between p-6 bg-emu flex-col gap-6">
             {children}
           </div>
         </Providers>
