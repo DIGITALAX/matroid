@@ -9,10 +9,10 @@ export const formatToken = (
   } catch {
     return "-";
   }
-  const base = 10n ** BigInt(decimals);
+  const base = BigInt("10") ** BigInt(decimals);
   const whole = value / base;
   const fraction = value % base;
-  if (fraction === 0n) return whole.toString();
+  if (fraction === BigInt("0")) return whole.toString();
   const fractionStr = fraction.toString().padStart(decimals, "0");
   const trimmed = fractionStr.replace(/0+$/, "");
   return `${whole.toString()}.${trimmed}`;
@@ -33,7 +33,7 @@ export const parseToken = (
   try {
     const whole = BigInt(safeWhole || "0");
     const frac = BigInt(fracPadded || "0");
-    const base = 10n ** BigInt(decimals);
+    const base = BigInt("10") ** BigInt(decimals);
     return (whole * base + frac).toString();
   } catch {
     return null;

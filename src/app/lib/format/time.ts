@@ -10,7 +10,7 @@ export const formatDuration = (
   } catch {
     return "-";
   }
-  if (value === 0n) return "0 seconds";
+  if (value === BigInt("0")) return "0 seconds";
   const seconds = Number(value);
   if (!Number.isFinite(seconds)) return "-";
   return moment.duration(seconds, "seconds").humanize();
@@ -26,7 +26,7 @@ export const formatTimestamp = (
   } catch {
     return "-";
   }
-  if (value === 0n) return "-";
+  if (value === BigInt("0")) return "-";
   const seconds = Number(value);
   if (!Number.isFinite(seconds)) return "-";
   return moment.unix(seconds).format("YYYY-MM-DD HH:mm:ss");
