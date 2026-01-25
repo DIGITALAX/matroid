@@ -4,7 +4,7 @@ import { WagmiProvider, createConfig, http } from "wagmi";
 import { ConnectKitProvider, getDefaultConfig } from "connectkit";
 import { chains } from "@lens-chain/sdk/viem";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { anvil } from "viem/chains";
+// import { anvil } from "viem/chains";
 
 const queryClient = new QueryClient();
 
@@ -17,10 +17,10 @@ export const config = createConfig(
       .NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
     appUrl: "https://matroid.digitalax.xyz",
     appIcon: "https://matroid.digitalax.xyz/favicon.ico",
-    chains: [chains.mainnet, anvil],
+    chains: [chains.mainnet],
     transports: {
       [chains.mainnet.id]: http("https://rpc.lens.xyz"),
-      [anvil.id]: http("http://127.0.0.1:8545"),
+      // [anvil.id]: http("http://127.0.0.1:8545"),
     },
     ssr: true,
   }),

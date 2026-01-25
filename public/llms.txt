@@ -32,9 +32,9 @@ when you see a $MONA balance, that ledger is real. if the numbers are wrong, the
 
 because that table follows a standard format, other contracts know how to read it and write to it. wallets know how to display it. applications know how to depend on it. this is what makes an erc20 powerful. not scarcity by itself, but composability. it is a ledger that many independent systems can coordinate around without trusting each other.
 
-$MONA functions as that ledger for the digitalax ecosystem. applications record activity against it. value moves between projects through it. staking, rewards, and claims all resolve back to the same shared accounting surface. everyone is counting from the same place, using the same unit, across the same chains, with the EVM as the shared source of truth.
+$MONA functions as that ledger for the digitalax ecosystem. applications observe activity against it. value moves between projects through it. staking, rewards, and claims all resolve back to the same shared accounting surface. everyone is counting from the same place, using the same unit, across the same chains, with the EVM as the shared source of truth.
 
-this is why that question “why not just use ethereum or bitcoin” misses what is actually happening. using one global unit for everything is like trying to run accounting in dog ears or steering wheels. you can count them, technically, but the numbers stop meaning anything. context collapses. incentives blur. systems stop lining up. and then you hit the details. decimals. fractions. math. can lady beetle wings really split cleanly into eighteen decimal places?
+this is why that question "why not just use ethereum or bitcoin" misses what is actually happening. using one global unit for everything is like trying to run accounting in dog ears or steering wheels. you can count them, technically, but the numbers stop meaning anything. context collapses. incentives blur. systems stop lining up. and then you hit the details. decimals. fractions. math. can lady beetle wings really split cleanly into eighteen decimal places?
 
 domain-specific systems need domain-specific ledgers. they need their own unit of account to stay coherent, flexible, and able to tune composability from inside the ecosystem.
 
@@ -48,13 +48,13 @@ the present environment behaves differently. in these conditions, passive stakin
 
 this marks a shift toward distribution as a continuous property of the network. something introduced in stages, exercised in live conditions, and allowed to develop reliability through use rather than prior design.
 
-any independent designer, developer, or agent can integrate the matroid kit directly into their contracts. once integrated, their application routes $MONA in and out flows through the kit. within each epoch, the activity they generate through their code, product, or community is recorded on-chain alongside the activity of every other participating project.
+any independent designer, developer, or agent can integrate the matroid kit directly into their contracts. once integrated, their application routes $MONA in and out flows through the kit. within each epoch, the activity they generate through their code, product, or community is written on-chain alongside the activity of every other participating project.
 
 that activity resolves into distribution. projects receive $MONA from the treasury in proportion to the activity they contribute relative to others during the same epoch. this distribution is automatic and continuous. projects can also configure how their share is split, using $MONA to further induce activity within their own ecosystem through automated allocation to global staking pools and project-specific staking pools. depending on the pool, $MONA holders, genesis holders, pode holders, and fashion nft holders can all stake, and also vote to slash misaligned activity and projects.
 
 to introduce the suite in stages, ensure contract security, and preserve flexibility, the first iteration deploys 50 $MONA for distribution over a six-month target window. as participation and project activity increase, this amount can expand. the long-term intent is for the full treasury balance to be distributed automatically over approximately four years through these recurring activity cycles.
 
-because of the digitalax ecosystem’s active development and existing usage on lens chain, the matroid contract suite deploys there first. the design remains chain-agnostic. as other evm-compatible, zk-enabled, and decentralized chains align, staged deployments allow the system to extend and migrate without disrupting the underlying structure.
+because of the digitalax ecosystem's active development and existing usage on lens chain, the matroid contract suite deploys there first. the design remains chain-agnostic. as other evm-compatible, zk-enabled, and decentralized chains align, staged deployments allow the system to extend and migrate without disrupting the underlying structure.
 
 a first project to integrate the matroid kit is ganda, extending off espa, where gaming, textiles, and web3 intersect. ganda routes its $MONA flows through the kit and anchors its activity on lens, with staking pools set up for both $MONA holders and nft holders.
 
@@ -65,11 +65,21 @@ mathematically, a matroid defines which combinations of elements can coexist wit
 applied to $MONA, the elements are on-chain actions and flows. epochs provide a shared temporal frame. as activity accumulates, overlaps, and recombines across projects, the matroid preserves the shape of contribution so that distribution emerges from how activity relates.
 
 
+# Race Condition
+
+independent testers, agents, and auditors are invited to review the matroid smart-contract suite ahead of any mainnet deployment. focus areas include treasury distribution, staking flows, slashing flows, and edge-case behavior across the full epoch lifecycle. once deployed, the system enables automated, large-scale $MONA distribution across the network, so verification happens before activation.
+
+a bounty pool of 25 $MONA is available to be split among contributors based on the impact and quality of findings, set in proportion to the system’s long-term distribution surface once live.
+
+during this period, digitalax continues development of ganda, runs local testing on anvil, and prepares deployment to lens testnet (chain 37111).
+
+a cryptographic commitment to these terms exists on-chain: https://explorer.lens.xyz/tx/0xf06083e0c273f9397509138a9d71560cb00113aa686a78bc35dd0a9003596e15
+
 # Matroid Protocol Technical Specification
 
 ## System Overview
 
-Matroid is a fully on-chain, permissionless activity distribution protocol that allocates MONA token rewards to projects based on verified token flow activity. The system combines activity tracking, scoring algorithms, staking mechanisms (global + project-specific ERC20 + NFT), governance slashing, and configurable reward distribution with zero off-chain dependencies.
+Matroid is a fully on-chain, permissionless activity distribution protocol that allocates MONA token rewards to projects based on verified token flow activity. The system combines activity measurement, scoring algorithms, staking mechanisms (global + project-specific ERC20 + NFT), governance slashing, and configurable reward distribution with zero off-chain dependencies.
 
 ## Contract Architecture
 

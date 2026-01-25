@@ -13,7 +13,8 @@ const HeaderEntry: FunctionComponent<{ dict: any }> = ({ dict }) => {
       {(path?.includes("/create") ||
         path?.includes("/manage") ||
         path?.includes("/info") ||
-        path?.includes("/walkaway")) && (
+        path?.includes("/walkaway") ||
+        path?.includes("/race-condition")) && (
         <ActionButton
           showIcon={false}
           connect={true}

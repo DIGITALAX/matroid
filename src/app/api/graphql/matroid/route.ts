@@ -3,7 +3,7 @@ import { ApolloClient, InMemoryCache, HttpLink, gql } from "@apollo/client";
 
 const serverMatroidClient = new ApolloClient({
   link: new HttpLink({
-    uri: process.env.GRAPH_NODE_URL_QUILTOIDE,
+    uri: process.env.GRAPH_NODE_URL_MATROID,
   }),
   cache: new InMemoryCache(),
 });

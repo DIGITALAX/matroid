@@ -53,14 +53,21 @@ export type NetworkConfig = (typeof NETWORKS)[keyof typeof NETWORKS];
 export const DEFAULT_NETWORK =
   // process.env.NODE_ENV === "production"
   //   ?
-  NETWORKS.ANVIL;
+  NETWORKS.LENS_MAINNET;
 // : NETWORKS.LENS_TESTNET;
 
 export const getCurrentNetwork = (): NetworkConfig => {
   // const isMainnet = process.env.NEXT_PUBLIC_NETWORK === "mainnet";
   // const isMainnet = true;
   // return isMainnet ? NETWORKS.LENS_MAINNET : NETWORKS.LENS_TESTNET;
-  return NETWORKS.ANVIL;
+  return NETWORKS.LENS_MAINNET;
+};
+
+export const getNetworkByChainId = (chainId: number): NetworkConfig => {
+  const match = Object.values(NETWORKS).find(
+    (network) => network.chainId === chainId,
+  );
+  return match || DEFAULT_NETWORK;
 };
 
 export const CORE_CONTRACT_ADDRESSES: Record<number, CoreContractAddresses> = {

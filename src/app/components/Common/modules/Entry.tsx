@@ -13,6 +13,10 @@ const Entry: FunctionComponent<{ dict: any; lang: string }> = ({
     <div className="relative w-full flex-1 flex items-center justify-center">
       <div className="relative items-center justify-center px-3 flex w-fit h-fit flex-wrap flex-row gap-3 max-w-sm">
         <ActionButton
+          label={dict?.raceCondition}
+          onClick={() => router.push("/race-condition")}
+        />
+        <ActionButton
           label={dict?.create}
           onClick={() => router.push("/create")}
         />
