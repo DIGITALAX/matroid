@@ -1,30 +1,47 @@
 "use client";
 import { createContext } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
-import { ConnectKitProvider, getDefaultConfig } from "connectkit";
+import { ConnectKitProvider } from "connectkit";
 import { chains } from "@lens-chain/sdk/viem";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-// import { anvil } from "viem/chains";
+import { walletConnect, coinbaseWallet, injected } from "wagmi/connectors";
 
 const queryClient = new QueryClient();
 
 export const ModalContext = createContext<{} | undefined>(undefined);
 
-export const config = createConfig(
-  getDefaultConfig({
-    appName: "MATROID",
-    walletConnectProjectId: process.env
-      .NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
-    appUrl: "https://matroid.digitalax.xyz",
-    appIcon: "https://matroid.digitalax.xyz/favicon.ico",
-    chains: [chains.mainnet],
-    transports: {
-      [chains.mainnet.id]: http("https://rpc.lens.xyz"),
-      // [anvil.id]: http("http://127.0.0.1:8545"),
-    },
-    ssr: true,
-  }),
-);
+export const config = createConfig({
+  chains: [chains.mainnet],
+  transports: {
+    [chains.mainnet.id]: http("https://rpc.lens.xyz"),
+  },
+  ssr: true,
+  connectors: [
+    injected({ target: "metaMask" }),
+    coinbaseWallet({
+      appName: "MATROID",
+      appLogoUrl: "https://matroid.digitalax.xyz/favicon.ico",
+      preference: {
+        options: "all",
+        telemetry: false,
+      },
+    }),
+    walletConnect({
+      projectId: process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID as string,
+      metadata: {
+        name: "MATROID",
+        description: "MATROID Protocol",
+        url: "https://matroid.digitalax.xyz",
+        icons: ["https://matroid.digitalax.xyz/favicon.ico"],
+      },
+      showQrModal: false,
+      qrModalOptions: {
+        themeMode: "dark",
+      },
+      telemetryEnabled: false,
+    }),
+  ],
+});
 
 export default function Providers({ children }: { children: React.ReactNode }) {
   return (
