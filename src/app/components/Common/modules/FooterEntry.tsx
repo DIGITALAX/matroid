@@ -2,7 +2,7 @@
 
 import { idiomaAIndice, Idiomas, indiceAIdioma } from "@/app/lib/constants";
 import { usePathname, useRouter } from "next/navigation";
-import { FunctionComponent, useState } from "react";
+import { FunctionComponent, useState, useEffect } from "react";
 import {
   PiArrowFatLinesLeftFill,
   PiArrowFatLinesRightFill,
@@ -16,6 +16,11 @@ const FooterEntry: FunctionComponent<{ dict: any }> = ({ dict }) => {
       (path.match(/(?<=\/)(en|es|ar|pt)(?=\/)/)?.[0] ?? "en") as Idiomas
     ],
   );
+
+  useEffect(() => {
+    const currentLang = path.match(/(?<=\/)(en|es|ar|pt)(?=\/)/)?.[0] ?? "en";
+    setChosenLanguage(idiomaAIndice[currentLang as Idiomas]);
+  }, [path]);
   const changeLanguage = (lang: string) => {
     const segments = path.split("/");
     segments[1] = lang;
