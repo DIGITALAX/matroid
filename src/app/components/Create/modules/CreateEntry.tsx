@@ -5,11 +5,11 @@ import { MdOutlineArrowOutward } from "react-icons/md";
 import Caja from "./Caja";
 import { usePathname } from "next/navigation";
 
-const CreateEntry: FunctionComponent<{ dict: any; lang: string }> = ({
+const CreateEntry: FunctionComponent<{ dict: any; lang?: string }> = ({
   dict,
-  lang,
 }): JSX.Element => {
   const path = usePathname();
+  const lang = path.match(/^\/([a-z]{2})(\/|$)/)?.[1] ?? "en";
   return (
     <Caja title={`*${dict?.create}*`}>
       <div className="relative w-full overflow-y-scroll h-[20rem] flex text-center items-center justify-start p-6 font-earl flex-col gap-6">

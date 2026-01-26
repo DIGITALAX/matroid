@@ -4,11 +4,11 @@ import { FunctionComponent, JSX } from "react";
 import Caja from "../../Create/modules/Caja";
 import { usePathname } from "next/navigation";
 
-const InfoEntry: FunctionComponent<{ dict: any; lang: string }> = ({
+const InfoEntry: FunctionComponent<{ dict: any; lang?: string }> = ({
   dict,
-  lang,
 }): JSX.Element => {
   const path = usePathname();
+  const lang = path.match(/^\/([a-z]{2})(\/|$)/)?.[1] ?? "en";
   return (
     <Caja title={`*${dict?.info}*`}>
       <div

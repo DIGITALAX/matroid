@@ -57,10 +57,6 @@ export function middleware(request: NextRequest) {
 
   const locale = getLocale(request);
 
-  if (locale === defaultLocale) {
-    return NextResponse.next();
-  }
-
   const response = NextResponse.redirect(
     new URL(`/${locale}${pathname}`, request.url),
   );

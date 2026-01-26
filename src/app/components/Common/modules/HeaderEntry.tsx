@@ -8,6 +8,7 @@ import { usePathname, useRouter } from "next/navigation";
 const HeaderEntry: FunctionComponent<{ dict: any }> = ({ dict }) => {
   const router = useRouter();
   const path = usePathname();
+  const currentLang = path.match(/(?<=\/)(en|es|ar|pt)(?=\/)/)?.[0] ?? "en";
   return (
     <div className="relative w-full flex-row flex-wrap h-fit flex items-start justify-center gap-3">
       {(path?.includes("/create") ||
@@ -19,7 +20,7 @@ const HeaderEntry: FunctionComponent<{ dict: any }> = ({ dict }) => {
           showIcon={false}
           connect={true}
           label={dict?.return}
-          onClick={() => router.push("/")}
+          onClick={() => router.push(`/${currentLang}`)}
         />
       )}
       <ConnectKitButton.Custom>

@@ -52,5 +52,5 @@ export async function generateMetadata({
 }
 export default async function Info() {
   const dict = await (getDictionary as (locale: any) => Promise<any>)("en");
-  return <Wrapper page={<InfoEntry dict={dict} lang="en" />} dict={dict} />;
+  return <Wrapper page={<InfoEntry dict={dict} />} dict={dict} />;
 }
