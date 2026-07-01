@@ -1,0 +1,61 @@
+[
+  {
+    "type": "function",
+    "name": "currentRoot",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "bytes32" }]
+  },
+  {
+    "type": "function",
+    "name": "isKnownRoot",
+    "stateMutability": "view",
+    "inputs": [{ "name": "root", "type": "bytes32" }],
+    "outputs": [{ "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "nextLeafIndex",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "uint32" }]
+  },
+  {
+    "type": "function",
+    "name": "commitments",
+    "stateMutability": "view",
+    "inputs": [{ "name": "commitment", "type": "bytes32" }],
+    "outputs": [{ "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "usedEnrollNullifier",
+    "stateMutability": "view",
+    "inputs": [{ "name": "nullifier", "type": "bytes32" }],
+    "outputs": [{ "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "enroll",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "proof", "type": "bytes" },
+      { "name": "commitment", "type": "bytes32" },
+      { "name": "enrollNullifier", "type": "bytes32" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "event",
+    "name": "Enrolled",
+    "inputs": [
+      { "name": "commitment", "type": "bytes32", "indexed": true },
+      { "name": "leafIndex", "type": "uint32", "indexed": false },
+      { "name": "root", "type": "bytes32", "indexed": false }
+    ]
+  },
+  { "type": "error", "name": "AlreadyEnrolled", "inputs": [] },
+  { "type": "error", "name": "BadProof", "inputs": [] },
+  { "type": "error", "name": "TreeFull", "inputs": [] },
+  { "type": "error", "name": "CommitmentExists", "inputs": [] }
+]

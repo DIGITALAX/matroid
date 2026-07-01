@@ -1,0 +1,154 @@
+[
+  {
+    "type": "function",
+    "name": "proposalCount",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "proposals",
+    "stateMutability": "view",
+    "inputs": [{ "name": "id", "type": "uint256" }],
+    "outputs": [
+      { "name": "baseBudget", "type": "uint256" },
+      { "name": "perProjectBudget", "type": "uint256" },
+      { "name": "newDuration", "type": "uint256" },
+      { "name": "endTime", "type": "uint256" },
+      { "name": "yesWeight", "type": "uint256" },
+      { "name": "noWeight", "type": "uint256" },
+      { "name": "executed", "type": "bool" }
+    ]
+  },
+  {
+    "type": "function",
+    "name": "minProposeStake",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "quorumBps",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "uint16" }]
+  },
+  {
+    "type": "function",
+    "name": "thresholdBps",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "uint16" }]
+  },
+  {
+    "type": "function",
+    "name": "votingWindow",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "hasVoted",
+    "stateMutability": "view",
+    "inputs": [
+      { "name": "id", "type": "uint256" },
+      { "name": "voter", "type": "address" }
+    ],
+    "outputs": [{ "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "lockedStake",
+    "stateMutability": "view",
+    "inputs": [
+      { "name": "id", "type": "uint256" },
+      { "name": "voter", "type": "address" }
+    ],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "support",
+    "stateMutability": "view",
+    "inputs": [
+      { "name": "id", "type": "uint256" },
+      { "name": "voter", "type": "address" }
+    ],
+    "outputs": [{ "type": "bool" }]
+  },
+  {
+    "type": "function",
+    "name": "propose",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "newBaseBudget", "type": "uint256" },
+      { "name": "newPerProjectBudget", "type": "uint256" },
+      { "name": "newTargetDuration", "type": "uint256" }
+    ],
+    "outputs": [{ "name": "id", "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "vote",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "id", "type": "uint256" },
+      { "name": "inFavor", "type": "bool" },
+      { "name": "amount", "type": "uint256" }
+    ],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "cancelVote",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "id", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "execute",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "id", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "function",
+    "name": "withdraw",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "id", "type": "uint256" }],
+    "outputs": []
+  },
+  {
+    "type": "event",
+    "name": "ProposalCreated",
+    "inputs": [
+      { "name": "id", "type": "uint256", "indexed": true },
+      { "name": "baseBudget", "type": "uint256", "indexed": false },
+      { "name": "perProjectBudget", "type": "uint256", "indexed": false },
+      { "name": "endTime", "type": "uint256", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "Voted",
+    "inputs": [
+      { "name": "id", "type": "uint256", "indexed": true },
+      { "name": "voter", "type": "address", "indexed": true },
+      { "name": "inFavor", "type": "bool", "indexed": false },
+      { "name": "amount", "type": "uint256", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "ProposalExecuted",
+    "inputs": [
+      { "name": "id", "type": "uint256", "indexed": true },
+      { "name": "passed", "type": "bool", "indexed": false },
+      { "name": "applied", "type": "bool", "indexed": false }
+    ]
+  }
+]

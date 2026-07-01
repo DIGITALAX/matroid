@@ -24,6 +24,25 @@ export const GLOBAL_PANEL_QUERY = `
   }
 `;
 
+export const ENROLLMENTS_QUERY = `
+  query Enrollments {
+    enrollments(first: 1000, orderBy: leafIndex, orderDirection: asc) {
+      commitment
+      leafIndex
+    }
+  }
+`;
+
+export const BALANCE_LEAVES_QUERY = `
+  query BalanceLeaves {
+    balanceLeaves(first: 1000, orderBy: leafIndex, orderDirection: asc) {
+      holder
+      balance
+      leafIndex
+    }
+  }
+`;
+
 export const PROJECTS_LIST_QUERY = `
   query ProjectsList {
     projects {

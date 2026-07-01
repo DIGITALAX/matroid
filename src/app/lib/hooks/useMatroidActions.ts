@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { useWriteContract } from "wagmi";
+import type { Abi } from "viem";
 import { getABI } from "@/app/abis";
 import { useCoreAddresses } from "@/app/lib/hooks/useCoreAddresses";
 
@@ -26,7 +27,7 @@ export const useMatroidActions = () => {
   const callTreasury = async (functionName: string, args: readonly unknown[] = []) => {
     return writeContractAsync({
       address: treasury.address,
-      abi: treasury.abi as unknown[],
+      abi: treasury.abi as Abi,
       functionName,
       args,
     });
@@ -35,7 +36,7 @@ export const useMatroidActions = () => {
   const callSlashing = async (functionName: string, args: readonly unknown[] = []) => {
     return writeContractAsync({
       address: slashing.address,
-      abi: slashing.abi as unknown[],
+      abi: slashing.abi as Abi,
       functionName,
       args,
     });

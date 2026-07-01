@@ -26,6 +26,14 @@ const Entry: FunctionComponent<{ dict: any; lang?: string }> = ({
           onClick={() => router.push(`/${lang}/manage`)}
         />
         <ActionButton
+          label={dict?.govern}
+          onClick={() => router.push(`/${lang}/govern`)}
+        />
+        <ActionButton
+          label={dict?.projects}
+          onClick={() => router.push(`/${lang}/projects`)}
+        />
+        <ActionButton
           label={dict?.staking}
           onClick={() => window.open(`https://staking.digitalax.xyz/${lang}`)}
         />

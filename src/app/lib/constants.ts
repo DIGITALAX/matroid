@@ -80,6 +80,10 @@ export const CORE_CONTRACT_ADDRESSES: Record<number, CoreContractAddresses> = {
     GlobalStakingPool: "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
     Treasury: "0xed1db453c3156ff3155a97ad217b3087d5dc5f6e",
     SlashingCouncil: "0xf7cd8fa9b94db2aa972023b379c7f72c65e4de9d",
+    MatroidGovernance: "0x",
+    MatroidAnonGovernance: "0x",
+    IdentityRegistry: "0x",
+    MonaBalanceTree: "0x",
   },
   [NETWORKS.LENS_MAINNET.chainId]: {
     Mona: "0x",
@@ -90,6 +94,10 @@ export const CORE_CONTRACT_ADDRESSES: Record<number, CoreContractAddresses> = {
     GlobalStakingPool: "0x",
     Treasury: "0x",
     SlashingCouncil: "0x",
+    MatroidGovernance: "0x",
+    MatroidAnonGovernance: "0x",
+    IdentityRegistry: "0x",
+    MonaBalanceTree: "0x",
   },
 };
 

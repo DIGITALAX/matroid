@@ -3,6 +3,7 @@ import { createContext } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { ConnectKitProvider } from "connectkit";
 import { chains } from "@lens-chain/sdk/viem";
+import { zksyncInMemoryNode } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { walletConnect, coinbaseWallet, injected } from "wagmi/connectors";
 
@@ -11,9 +12,12 @@ const queryClient = new QueryClient();
 export const ModalContext = createContext<{} | undefined>(undefined);
 
 export const config = createConfig({
-  chains: [chains.mainnet],
+  chains: [chains.mainnet, zksyncInMemoryNode],
   transports: {
     [chains.mainnet.id]: http("https://rpc.lens.xyz"),
+    [zksyncInMemoryNode.id]: http(
+      process.env.NEXT_PUBLIC_ZKSYNC_RPC_URL || "http://127.0.0.1:8011",
+    ),
   },
   ssr: true,
   connectors: [

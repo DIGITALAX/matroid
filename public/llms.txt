@@ -52,11 +52,13 @@ any independent designer, developer, or agent can integrate the matroid kit dire
 
 that activity resolves into distribution. projects receive $MONA from the treasury in proportion to the activity they contribute relative to others during the same epoch. this distribution is automatic and continuous. projects can also configure how their share is split, using $MONA to further induce activity within their own ecosystem through automated allocation to global staking pools and project-specific staking pools. depending on the pool, $MONA holders, genesis holders, pode holders, and fashion nft holders can all stake, and also vote to slash misaligned activity and projects.
 
-to introduce the suite in stages, ensure contract security, and preserve flexibility, the first iteration deploys 50 $MONA for distribution over a six-month target window. as participation and project activity increase, this amount can expand. the long-term intent is for the full treasury balance to be distributed automatically over approximately four years through these recurring activity cycles.
+to ensure contract security and preserve flexibility, the first deployment targets the treasury's remaining 843 $MONA for distribution over an approximately four-year window. this target grows whenever anyone deposits more $MONA, and the duration can be extended — only lengthened, never shortened — by $MONA-holder governance. the schedule can stretch, but it can never be rugged.
 
 because of the digitalax ecosystem's active development and existing usage on lens chain, the matroid contract suite deploys there first. the design remains chain-agnostic. as other evm-compatible, zk-enabled, and decentralized chains align, staged deployments allow the system to extend and migrate without disrupting the underlying structure.
 
-a first project to integrate the matroid kit is ganda, extending off espa, where gaming, textiles, and web3 intersect. ganda routes its $MONA flows through the kit and anchors its activity on lens, with staking pools set up for both $MONA holders and nft holders.
+a first project to integrate the matroid kit is dx.computer, an open-source maker kit registry — designers and makers register kits, fund treeliner grants, deploy cyberswagman agents, and govern shared decisions, anonymously where it matters. dx.computer routes its $MONA flows through the kit and anchors its activity on lens.
+
+ganda, extending off espa, where gaming, textiles, and web3 intersect, integrates next — routing its $MONA flows through the kit too, with staking pools set up for both $MONA holders and nft holders.
 
 matroids are what make this resolution possible at scale.
 
@@ -64,6 +66,16 @@ mathematically, a matroid defines which combinations of elements can coexist wit
 
 applied to $MONA, the elements are on-chain actions and flows. epochs provide a shared temporal frame. as activity accumulates, overlaps, and recombines across projects, the matroid preserves the shape of contribution so that distribution emerges from how activity relates.
 
+
+# Sponsor & Anonymous Governance
+
+matroid-connected projects can choose which of their contract functions run anonymously — transact, vote, comment, whatever a project decides to open. running anonymously means proving membership and eligibility in zero knowledge instead of signing from a public wallet. no address is ever published, no action traces back to a person.
+
+that anonymity still costs gas, and someone has to cover it. a sponsor deposits ETH into the SponsorVault, which funds the pool that pays for those anonymous actions. the deposit is one-way: it fuels the pool, it is not staked, and it does not come back. in return, the project routes a reward back to the sponsor, sized by their share of the pool and drawn from whatever that project decides to share — claim it anytime.
+
+this is a different role from a staker. a staker locks MONA against a project's activity and score, and can unstake. a sponsor funds anonymity itself, and the relationship is one-way by design.
+
+anonymous governance follows the same shape. MatroidGovernance is the public path: lock MONA, vote with that stake as weight, your wallet is the record. MatroidAnonGovernance is a parallel, separate path for the same budget proposals — same treasury, same effect on execution — but the vote proves two things in zero knowledge instead of revealing a wallet: that the voter holds an enrolled identity (the chip, via IdentityRegistry), and that the voter holds at least a minimum MONA balance (via MonaBalanceTree), each consumed with a one-time nullifier so no one can vote twice on the same proposal. the public and anonymous paths do not merge into one tally — they are two independent ways to reach the same Treasury, coexisting without either one being able to break the other.
 
 # Race Condition
 
@@ -83,7 +95,7 @@ Matroid is a fully on-chain, permissionless activity distribution protocol that 
 
 ## Contract Architecture
 
-### Core Contracts (9 total)
+### Core Contracts (12 total)
 
 #### 1. MatroidRegistry.sol
 **Purpose**: Central state registry for all token flows, project metadata, epoch statistics, and reward configuration.
@@ -111,7 +123,11 @@ Matroid is a fully on-chain, permissionless activity distribution protocol that 
 - `createProjectPool()` - callable by any registered project to create pools post-registration
 - `setRewardSplits(uint16 globalSplitBps, uint16 projectErc20SplitBps, uint16 projectNftSplitBps)` - configures reward distribution (sum ≤10000)
 - `setClaimer(address claimer, bool allowed)` - project authorizes/revokes claim addresses
-- `recordFlow(address project, address user, address token, uint256 amount, bool isIn)` - core flow recording with balance validation, updates all stats
+- `leave()` - project deregisters itself (excluded from future/current-epoch scoring) while keeping its stored record/history
+- `eraseSelf()` - project fully deletes its stored record (deregisters + wipes the Project struct); callable any time, even after `leave`, same address
+- `eraseEpoch(uint256 epoch)` - project deletes a specific epoch's stat aggregate (bounded; repeat to clear history). Event logs persist (chain physics); only on-chain storage is wiped
+- `creditChipWeight(address project)` - onlyMatroidKit; +1 to the project's `weightedUniqueUsers` for the current epoch (the chip bonus, gated by the Kit's nullifier dedup)
+- `recordFlow(address project, address user, address token, uint256 amount, bool isIn)` - core flow recording with balance validation, updates all stats (now also increments `weightedUniqueUsers` alongside `monaUniqueUsers`)
 - `currentEpoch() returns (uint256)` - `(block.timestamp - deployedAt) / epochDuration`
 - `epochBounds(uint256 epoch) returns (uint256 start, uint256 end)` - epoch time boundaries
 - View functions for all stats and mappings
@@ -134,6 +150,9 @@ Matroid is a fully on-chain, permissionless activity distribution protocol that 
 - `registerProject(bytes32 metadata, bool pool)` - registers `msg.sender` as project, emits `ProjectRegistered`
 - `matroidIn(address user, address token, uint256 amount)` - records user→project flow, calls `registry.recordFlow(..., true)`
 - `matroidOut(address user, address token, uint256 amount)` - records project→user flow, calls `registry.recordFlow(..., false)`
+- `setVerification(address verifier, address roots)` - owner, set-once; wires the chip-activity ZK verifier + IdentityRegistry (for `isKnownRoot`)
+- `matroidInVerified(user, token, amount, merkleRoot, proof, nullifier)` - chip-gated inflow: verifies the ZK proof (IdentityRegistry membership + per-project/epoch nullifier dedup), records the flow, AND calls `registry.creditChipWeight()` so a verified unique chip counts double in scoring
+- `matroidOutVerified(...)` - same, for outflows
 
 **Events**:
 - `ProjectRegistered(address indexed project, bytes32 metadata)`
@@ -161,7 +180,7 @@ function score(address project, uint256 epoch) external view returns (uint256)
 1. Fetch `EpochStats` from registry
 2. Return 0 if `monaUniqueUsers == 0 || monaTotalVolume == 0`
 3. Calculate components:
-   - `sqrtU = sqrt(monaUniqueUsers) * SCALE`
+   - `sqrtU = sqrt(weightedUniqueUsers) * SCALE` (chip-verified uniques count double; for anonymous-only activity `weightedUniqueUsers == monaUniqueUsers`, so scoring is unchanged — fully backward-compatible)
    - `retention = (monaRecurringUsers * SCALE) / monaUniqueUsers`, floored at `SCALE / 2` (50%)
    - `activity = log2(monaCappedTxCount + 1) * SCALE`
    - `cappedShare = (monaCappedVolume * SCALE) / monaTotalVolume`, capped at `SCALE`
@@ -185,6 +204,8 @@ function score(address project, uint256 epoch) external view returns (uint256)
 - `address public owner` - treasury owner
 - `GlobalStakingPool public globalPool` - global pool reference
 - `address public slashingContract` - slashing council address
+- `address public governance` - public budget-governance address (set-once)
+- `address public anonGovernance` - anonymous (ZK) budget-governance address (set-once); additive, parallel to `governance` — either may call `setBudgets`/`extendDuration`
 - `uint256 public immutable claimWindow` - claim expiry period (e.g., 2419200 = 4 weeks)
 - `uint256 public targetTotal` - target total distribution amount
 - `uint256 public targetDuration` - target distribution period
@@ -192,6 +213,9 @@ function score(address project, uint256 epoch) external view returns (uint256)
 - `uint256 public totalDistributed` - cumulative distributed amount
 - `uint256 public baseBudget` - base epoch budget
 - `uint256 public perProjectBudget` - per-active-project budget increment
+- `uint256 public lastActivity` - timestamp of the last distribution; drives the stale-drain safety valve
+- `uint256 public constant STALE_PERIOD` - 365 days; idle window after which `drainStale()` is callable
+- `uint256 public targetDuration` - now mutable, governance-extendable (only up); was immutable
 - `mapping(uint256 => mapping(address => uint256)) private _claimable` - computed claimable amounts
 - `mapping(uint256 => mapping(address => bool)) private _claimableSet` - computation flags
 - `mapping(uint256 => MatroidLibrary.EpochData) private _epochData` - finalization data
@@ -204,19 +228,24 @@ function score(address project, uint256 epoch) external view returns (uint256)
 **Key Functions**:
 
 **Budget Management**:
-- `deposit(uint256 amount)` - anyone can deposit MONA, increases `targetTotal`
-- `setTargetTotal(uint256 newTarget)` - owner only, can only increase
+- `deposit(uint256 amount)` - anyone can deposit MONA, increases `targetTotal` (the only way `targetTotal` grows)
 - `reconcileTarget()` - anyone, sets `targetTotal = max(targetTotal, balance + distributed)`
-- `setTargetDuration(uint256 newDuration)` - owner only, can only increase
-- `setBudgets(uint256 baseBudget, uint256 perProjectBudget)` - owner only
+- `setBudgets(uint256 baseBudget, uint256 perProjectBudget)` - callable by `governance` OR `anonGovernance` (`onlyAnyGovernance`); set via a passed vote in MatroidGovernance (public) or MatroidAnonGovernance (anonymous, ZK)
+- `setGovernance(address)` - owner only, set-once (wires MatroidGovernance)
+- `setAnonGovernance(address)` - owner only, set-once (wires MatroidAnonGovernance); additive — does not replace or require `governance`
+- `setSlashingContract(address)` - owner only, set-once
+- `renounceOwnership()` - owner only, requires governance already set; afterwards no owner remains
+- `extendDuration(uint256 newDuration)` - governance only; can ONLY increase `targetDuration` (reverts if `newDuration <= targetDuration`), with the deploy value (~4 years) as the floor. The schedule lengthens but never shortens (no rug). `targetTotal` grows only via permissionless `deposit`. There is no way to shorten the schedule or reduce the target.
+- `drainStale()` - permissionless safety valve; after `STALE_PERIOD` (365 days) with no claim, anyone can sweep the treasury balance to the GlobalStakingPool so $MONA can never be permanently stranded (even if the protocol goes fully idle with no owner)
 
 **Epoch Management**:
 ```solidity
-function finalizeEpoch(uint256 epoch) external {
-    // Must be after epoch end
-    // Loops all projects, computes scores, sums totalScore + activeProjects + totalUniqueUsers
-    // Calculates epochBudget
-    // Stores EpochData: finalized=true, totalScore, activeProjects, budget, finalizedAt=block.timestamp
+function finalizeEpoch(uint256 epoch) external { _finalizeEpochBatch(epoch, 0); }
+function finalizeEpochBatch(uint256 epoch, uint256 maxProjects) external {
+    // Batched to avoid unbounded gas as projectCount grows.
+    // First call snapshots projectCount; accumulates totalScore + activeProjects
+    // + totalUniqueUsers into EpochData across calls (cursor-based).
+    // Computes epochBudget and sets finalized=true only when the cursor reaches the snapshot.
 }
 ```
 
@@ -263,6 +292,7 @@ function claim(uint256 epoch, address project) external nonReentrant {
 - `EpochFinalized(uint256 indexed epoch, uint256 totalScore, uint256 activeProjects, uint256 budget)`
 - `ClaimableSet`, `ClaimableCleared`, `Claimed(uint256 indexed epoch, address indexed project, address indexed claimer, uint256 amount)`
 - `SlashingContractUpdated`, `ProjectSlashed`, `SlashRewardNotified`, `SlashResolved`
+- `GovernanceSet(address indexed governance)`, `AnonGovernanceSet(address indexed anonGovernance)`
 
 #### 5. StakingFactory.sol
 **Purpose**: Deterministic deployment of project-specific staking pools.
@@ -524,6 +554,69 @@ function withdrawStake(uint256 epoch, address project) external nonReentrant {
 - `ProposalResolved(uint256 indexed epoch, address indexed project, bool passed)`
 - `VoterRewardNotified`, `VoterRewarded`
 
+#### 10. MatroidGovernance.sol
+**Purpose**: Community governance of the Treasury's per-epoch budgets by MONA holders. Lock-to-vote, linear weight (Sybil-proof: splitting gives no advantage), per-proposal (no epochs).
+
+**State**: `mona`, `treasury`; immutable `votingWindow` / `minProposeStake` / `quorumBps` / `thresholdBps`; `proposals`, `lockedStake`, `support`, `hasVoted`.
+
+**Functions**:
+- `propose(uint256 baseBudget, uint256 perProjectBudget, uint256 newTargetDuration)` - anyone; locks `minProposeStake` (counts as a YES), opens a voting window. `newTargetDuration = 0` = budgets-only; if `> 0`, a passing vote also calls `treasury.extendDuration` (only lengthens, never shortens)
+- `vote(uint256 id, bool inFavor, uint256 amount)` - lock MONA to vote; weight = amount (linear)
+- `cancelVote(uint256 id)` - during the window, withdraw your vote and stake (free exit)
+- `execute(uint256 id)` - after the window; passes if `yes+no >= quorum` (quorum = `quorumBps` of MONA total supply) AND `yes/(yes+no) >= thresholdBps`; on pass calls `treasury.setBudgets(...)` inside try/catch so a reverting setter cannot brick the proposal
+- `withdraw(uint256 id)` - reclaim locked MONA after the window
+
+**Notes**: Its own parameters are immutable (no meta-governance backdoor). It governs `setBudgets` and `extendDuration` (the latter only lengthens the distribution schedule, never shortens — safe). `targetTotal` is not directly votable (it grows only via permissionless `deposit`).
+
+#### 11. SponsorVault.sol
+**Purpose**: MasterChef-style ETH-funded gas pool. Sponsors deposit ETH (one-way, not staked, not withdrawable) and earn MONA rewards proportional to their share of total points, fed by `notifyReward` calls from elsewhere in the system (e.g. a product-sale slice on dx.computer's PrefabMarket).
+
+**State Variables**:
+- `IGasPool public immutable gasPool` - the paymaster/gas pool that deposited ETH is forwarded to
+- `IERC20 public immutable mona` - reward token
+- `uint256 public totalPoints` - sum of all sponsor points (1 point per wei deposited)
+- `uint256 public accRewardPerPoint` - MasterChef-style reward accumulator
+- `mapping(address => uint256) public points` - sponsor points
+- `mapping(address => uint256) public rewardDebt` - per-sponsor accumulator debt
+
+**Key Functions**:
+- `deposit() external payable` - sponsor deposits ETH; settles pending reward, adds `msg.value` to points and `totalPoints`, forwards ETH to `gasPool.fund()`
+- `notifyReward(uint256 amount)` - anyone (typically a market/sale contract); reverts `NoSponsors` if `totalPoints == 0`; pulls `amount` MONA and updates `accRewardPerPoint`
+- `pending(address sponsor) view returns (uint256)` - unclaimed reward for a sponsor
+- `claim()` - settles and transfers pending MONA to `msg.sender`
+
+**Events**: `Deposited(address indexed sponsor, uint256 amount, uint256 totalPoints)`, `RewardAdded(uint256 amount, uint256 accRewardPerPoint)`, `Claimed(address indexed sponsor, uint256 amount)`
+
+**Errors**: `ZeroAmount()`, `NoSponsors()`, `TransferFailed()`
+
+**Note**: deliberately has no relationship to staking, governance, or the Treasury's epoch/score system — it is a standalone, one-way funding role (see "Sponsor & Anonymous Governance" above).
+
+#### 12. MatroidAnonGovernance.sol
+**Purpose**: Anonymous, zero-knowledge parallel to MatroidGovernance for the same Treasury budget proposals. Same effect (`setBudgets` / `extendDuration`), different voting mechanism — proves identity + balance instead of revealing a wallet. Additive: does not replace MatroidGovernance, both call into Treasury via `onlyAnyGovernance`.
+
+**State Variables**:
+- `IVerifier public immutable votingVerifier` - ZK proof verifier (shared `voting` circuit)
+- `IRootSource public immutable identity` - IdentityRegistry (chip-enrollment Merkle root)
+- `IRootSource public immutable snapshots` - MonaBalanceTree (MONA-balance Merkle root)
+- `ITreasuryGovernance public immutable treasury` - Treasury reference (calls `setBudgets`/`extendDuration`)
+- `uint128 public immutable minBalance` - minimum MONA balance required to vote
+- `uint64 public immutable votingWindow` - voting period per proposal
+- `uint256 public immutable quorumFloor`, `uint256 public quorum` - pass threshold (raw yes-vote count, not bps of supply — anonymous voters are not enumerable the way public stake is)
+- `mapping(uint256 => Proposal) public proposals` - `identityRoot`, `balanceRoot`, `start`, `end`, `exists`, `executed`, `baseBudget`, `perProjectBudget`, `newDuration` (roots are snapshotted at proposal creation so later enrollments/registrations can't retroactively change who could have voted)
+- `mapping(uint256 => mapping(bytes32 => bool)) public usedNullifier` - one vote per identity per proposal
+- `mapping(uint256 => mapping(uint8 => uint256)) public tally` - `[proposalId][choice]` vote counts
+
+**Key Functions**:
+- `propose(uint256 baseBudget, uint256 perProjectBudget, uint256 newDuration) returns (uint256 id)` - permissionless; snapshots current identity/balance roots, opens the voting window
+- `vote(bytes proof, uint256 proposalId, uint8 choice, bytes32 nullifier)` - verifies a 6-input ZK proof (identityRoot, proposalId, choice, balanceRoot, minBalance, nullifier) against the `voting` circuit; reverts `AlreadyVoted` if the nullifier was used; increments `tally[proposalId][choice]`
+- `execute(uint256 proposalId)` - after the window; passes if `yes >= quorum && yes > no`; on pass, calls `treasury.setBudgets(...)` (try/catch) and `treasury.extendDuration(...)` if `newDuration > 0`
+
+**Events**: `ProposalCreated(id, baseBudget, perProjectBudget, newDuration, end)`, `Voted(id, choice, nullifier)`, `Executed(id, passed, applied)`
+
+**Errors**: `NoProposal()`, `VotingClosed()`, `VotingOpen()`, `InvalidChoice()`, `AlreadyVoted()`, `AlreadyExecuted()`, `BadProof()`, `BelowFloor()`
+
+**Note**: shares its identity/balance proving infrastructure (IdentityRegistry, MonaBalanceTree, the `voting` Noir circuit) with dx.computer's SponsorCouncil — same chip, same MONA-balance commitment, reusable across any project that wants anonymous, eligibility-gated voting.
+
 ## Data Structures (MatroidLibrary.sol)
 
 ### Project
@@ -549,6 +642,7 @@ struct Project {
 ```solidity
 struct EpochStats {
     uint256 monaUniqueUsers;        // unique MONA users this epoch
+    uint256 weightedUniqueUsers;    // chip-weighted uniques (anon +1, verified chip +2); used by the scorer
     uint256 monaRecurringUsers;     // users active in epoch N and N-1
     uint256 monaTxCount;            // total MONA transactions
     uint256 monaTotalVolume;        // total MONA volume
@@ -630,7 +724,7 @@ struct RewardToken {
 
 ## Error Handling (MatroidErrors.sol)
 
-34 custom errors:
+45 custom errors:
 - `ZeroAmount()` - amount parameter is zero
 - `ZeroAddress()` - address parameter is zero
 - `NotOwner()` - caller is not owner
@@ -660,6 +754,17 @@ struct RewardToken {
 - `NotNFTOwner()` - caller not NFT owner
 - `NFTAlreadyStaked()` - NFT already staked
 - `NFTNotStaked()` - NFT not staked
+- `ProposalNotFound()` - governance proposal does not exist
+- `AlreadyVoted()` - voter already voted on this proposal
+- `NotVoted()` - voter has no active vote to cancel
+- `VoteWindowOpen()` - voting window still open
+- `AlreadyExecuted()` - proposal already executed
+- `InvalidThreshold()` - bps parameter out of range
+- `NotGovernance()` - caller is not the governance contract
+- `GovernanceNotSet()` - governance not wired before renounce
+- `UnknownRoot()` - chip-activity proof references an unknown IdentityRegistry root
+- `NullifierUsed()` - chip-activity nullifier already used for this project/epoch
+- `BadProof()` - chip-activity ZK proof failed verification
 
 ## State Machine Diagrams
 
@@ -984,7 +1089,9 @@ epochTotalWeight[epoch] += weight
 
 ### Access Control
 - **MatroidKit**: Only MatroidKit can call `MatroidRegistry.registerProject()` and `recordFlow()`
-- **Owner**: Only owner can call `setMatroidKit()`, `setTargetTotal()`, `setTargetDuration()`, `setBudgets()`, `setSlashingContract()`
+- **Owner**: `setMatroidKit()` (Registry, one-time); on Treasury `setSlashingContract()` and `setGovernance()` (both set-once) plus `renounceOwnership()`. After wiring + renounce, no owner remains.
+- **Governance**: `Treasury.setBudgets()` / `extendDuration()` are callable by either `governance` (MatroidGovernance, public stake-weighted) or `anonGovernance` (MatroidAnonGovernance, anonymous ZK) via `onlyAnyGovernance` — both wired set-once by the owner, both require a passed vote, neither can disable the other.
+- **Sponsor**: `SponsorVault.deposit()` is fully permissionless; `notifyReward()` is callable by anyone holding MONA to distribute (in practice, a sale/market contract), reverting `NoSponsors` if `totalPoints == 0`.
 - **Project**: Only project address can call `setRewardSplits()`, `setClaimer()`, `addRewardToken()`, `removeRewardToken()`, `setNftWeight()`
 - **Claimer**: Only authorized claimers can call `Treasury.claim()`
 - **Treasury**: Only treasury can call `SlashingCouncil.notifyVoterReward()`
@@ -1076,10 +1183,10 @@ registryAddress: 0x...
 scorerAddress: 0x...
 globalPoolAddress: 0x... // from GlobalStakingPool deployment
 claimWindowSeconds: 2419200 // 4 weeks
-targetTotalAmount: 100000000000000000000000 // 100k MONA target distribution
-targetDurationSeconds: 31536000 // 1 year
-baseBudgetAmount: 1000000000000000000000 // 1k MONA base budget per epoch
-perProjectBudgetAmount: 100000000000000000000 // 100 MONA per active project per epoch
+targetTotalAmount: 843000000000000000000 // 843 MONA (treasury's remaining reserve — real figure, not invented)
+targetDurationSeconds: 126144000 // ~4 years (4 * 365 days)
+baseBudgetAmount: 4000000000000000000 // 4 MONA base budget per epoch (~843 / 208 weeks)
+perProjectBudgetAmount: 1000000000000000000 // 1 MONA per active project per epoch
 
 // SlashingCouncil
 monaToken: 0x...
@@ -1089,6 +1196,42 @@ votingWindowSeconds: 259200 // 3 days
 minVoterDivisorValue: 100 // minVoters = uniqueUsers / 100, min 3
 maxSlashBpsValue: 5000 // max 50% slash
 thresholdBpsValue: 5000 // 50% of total weight required to pass
+
+// MatroidGovernance
+monaToken: 0x...
+treasuryAddress: 0x... // from Treasury deployment
+votingWindowSeconds: 259200 // 3 days
+minProposeStakeAmount: 1000000000000000000 // 1 MONA to open a proposal
+quorumBpsValue: 1000 // 10% of MONA total supply must participate
+thresholdBpsValue: 6000 // 60% yes to pass
+
+// Deploy order (achieves "no owner"):
+//   Registry -> Kit -> Registry.setMatroidKit -> Scorer -> GlobalPool -> Treasury
+//   -> SlashingCouncil -> Treasury.setSlashingContract (set-once)
+//   -> MatroidGovernance -> Treasury.setGovernance (set-once)
+//   For chip-weighted activity: deploy the `activity` ZK verifier (via bb) + IdentityRegistry,
+//   then MatroidKit.setVerification(activityVerifier, identityRegistry) (set-once).
+//   For anonymous budget governance: deploy the shared `voting` ZK verifier (via bb) +
+//   IdentityRegistry (reuse the one above if already deployed) + MonaBalanceTree,
+//   then MatroidAnonGovernance(votingVerifier, identityRegistry, monaBalanceTree, treasury, ...)
+//   -> Treasury.setAnonGovernance (set-once, additive — does not require MatroidGovernance).
+//   For sponsorship: deploy SponsorVault(gasPoolAddress, monaToken) — standalone, no wiring
+//   into Treasury/Registry required; sale/market contracts call its notifyReward() directly.
+//   -> Treasury.renounceOwnership() (only after governance is set; anonGovernance optional).
+
+// SponsorVault
+gasPoolAddress: 0x... // the paymaster / gas pool contract
+monaToken: 0x...
+
+// MatroidAnonGovernance
+votingVerifierAddress: 0x... // deployed `voting` circuit verifier (bb)
+identityAddress: 0x...       // IdentityRegistry
+snapshotAddress: 0x...       // MonaBalanceTree
+treasuryAddress: 0x...
+minBalance_: 1000000000000000000 // 1 MONA minimum to vote
+votingWindow_: 259200             // 3 days
+quorum_: 5                        // raw yes-vote count to pass (not bps of supply)
+quorumFloor_: 5                   // immutable floor, quorum_ must be >= this
 ```
 
 ## Integration Examples
@@ -1185,6 +1328,25 @@ await council.claimVoterReward(epoch, projectAddress)
 await council.withdrawStake(epoch, projectAddress)
 ```
 
+## Subgraph
+
+The matroid subgraph indexes the protocol's core entities (`Global`, `Project`, `Epoch`, `Staker`, `ProjectPoolERC20`/`ProjectPoolNFT`, slashing `Proposal`/`Voter`, etc.) plus the entities below, added alongside SponsorVault and the two governance paths.
+
+**Public budget governance (MatroidGovernance)**:
+- `BudgetProposal` — `proposalId`, `baseBudget`, `perProjectBudget`, `newDuration`, `endTime`, `yesWeight`, `noWeight`, `executed`, `passed`, `applied`
+- `BudgetVote` — one per `Voted` event: `proposal`, `voter`, `inFavor`, `amount`
+
+**Anonymous budget governance (MatroidAnonGovernance)**:
+- `AnonBudgetProposal` — `proposalId`, `baseBudget`, `perProjectBudget`, `newDuration`, `end`, `yes`, `no`, `executed`, `passed`, `applied`. No per-voter entity — votes are anonymous, only the aggregate tally is recorded.
+
+**Sponsor**:
+- `SponsorVault` (singleton) — `totalPoints`, `accRewardPerPoint`, `totalDeposited`, `totalRewards`, `totalClaimed`, `sponsorCount`
+- `Sponsor` — per depositor: `points`, `totalDeposited`, `totalClaimed`
+
+**Shared ZK infrastructure** (also consumed by dx.computer's SponsorCouncil and by MatroidKit's chip-weighted activity proofs):
+- `Enrollment` — one per `IdentityRegistry.Enrolled` event: `commitment`, `leafIndex`, `root`. The client rebuilds the identity Merkle tree from this list (ordered by `leafIndex`) to produce membership proofs for voting.
+- `BalanceLeaf` — one per `MonaBalanceTree.Registered` event: `holder`, `balance`, `leafIndex`, `root`. Same role, for the balance-eligibility proof.
+
 ## Testing Checklist
 
 ### Core Flow Recording
@@ -1258,4 +1420,9 @@ await council.withdrawStake(epoch, projectAddress)
 - **Tally**: Batch counting of votes to determine proposal outcome
 - **Resolution**: Batch processing of failed proposal penalties
 - **Accumulator**: Running total (rewardPerToken) for fair reward distribution
+- **Sponsor**: An address that deposits ETH into the SponsorVault to fund the gas pool behind anonymous actions; earns MONA proportional to their share of total points; deposits are one-way, not staked, not withdrawable
+- **Anonymous Governance**: A voting path (MatroidAnonGovernance) that reaches the same Treasury budget controls as MatroidGovernance, but proves eligibility in zero knowledge instead of revealing a wallet — parallel to, never merged with, the public path
+- **Nullifier**: A one-time value derived from a voter's private identity and the proposal id, consumed on vote to prevent voting twice without revealing who voted
+- **Identity Root**: The current Merkle root of IdentityRegistry's enrolled-chip tree, snapshotted into a proposal at creation time so later enrollments can't retroactively expand who could have voted on it
+- **Balance Root**: The current Merkle root of MonaBalanceTree's registered-balance tree, snapshotted the same way, used to prove "I hold at least the minimum MONA" without revealing which leaf is mine
 - **Debt**: Per-user snapshot of accumulator at last interaction

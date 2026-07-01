@@ -4,4 +4,6 @@ export {
   PROJECTS_PANEL_QUERY,
   EPOCHS_LIST_QUERY,
   EPOCHS_PANEL_QUERY,
+  ENROLLMENTS_QUERY,
+  BALANCE_LEAVES_QUERY,
 } from "@/app/lib/graphql/matroid";

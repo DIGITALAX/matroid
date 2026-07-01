@@ -9,7 +9,6 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  telemetry: false,
   webpack: (config) => {
     config.resolve.fallback = {
       ...config.resolve.fallback,
