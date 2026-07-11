@@ -11,11 +11,9 @@ import {
   subscribeIdentity,
 } from "@/app/lib/zk/identity";
 import { circuitAvailable, prove } from "@/app/lib/zk/prover";
-import { hash2, toHex32 } from "@/app/lib/zk/poseidon";
+import { toHex32 } from "@/app/lib/zk/poseidon";
 import { ModalContext } from "@/app/providers";
 import { ChipEnrollData } from "@/app/components/Common/types/common.types";
-
-const ENROLL_SCOPE = BigInt("0x656e726f6c6c");
 
 export const useChip = () => {
   const context = useContext(ModalContext);
@@ -69,29 +67,26 @@ export const useChip = () => {
     setBusy(true);
     try {
       const id = ensureIdentity();
-      let proof: `0x${string}` = "0x";
-      let enrollNullifier: `0x${string}` = toHex32(
-        hash2(id.commitment, ENROLL_SCOPE),
-      );
-      if (await circuitAvailable("enrollment")) {
-        const freshHex = freshnessFor(id.commitment);
-        context?.setTxModal({
-          open: true,
-          status: "proving",
-          label: "txEnroll",
-        });
-        const chipAttest = await fetchAttestation(freshHex);
-        const inputs = enrollProofInputs(chipAttest, freshHex);
-        const res = await prove("enrollment", inputs);
-        proof = res.proof;
-        enrollNullifier = toHex32(
-          enrollNullifierFrom(String(chipAttest.chipId)),
+      if (!(await circuitAvailable("enrollment"))) {
+        throw new Error(
+          "enrollment circuit missing at /circuits/enrollment.json",
         );
       }
+      const freshHex = freshnessFor(id.commitment);
+      context?.setTxModal({
+        open: true,
+        status: "proving",
+        label: "txEnroll",
+      });
+      const chipAttest = await fetchAttestation(freshHex);
+      const inputs = enrollProofInputs(chipAttest, freshHex);
+      const res = await prove("enrollment", inputs);
       return {
         commitment: toHex32(id.commitment),
-        proof,
-        enrollNullifier,
+        proof: res.proof,
+        enrollNullifier: toHex32(
+          enrollNullifierFrom(String(chipAttest.chipId)),
+        ),
       };
     } catch (e) {
       console.log("chip.enrollData failed", e);
