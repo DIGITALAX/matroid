@@ -1,21 +1,30 @@
 "use client";
 
-import { ConnectKitButton } from "connectkit";
-import { FunctionComponent } from "react";
+import { FunctionComponent, useState } from "react";
+import { useAccount } from "wagmi";
 import ActionButton from "./ActionButton";
+import ConnectModal from "./ConnectModal";
+import { useChip } from "@/app/lib/hooks/useChip";
 import { usePathname, useRouter } from "next/navigation";
 
 const HeaderEntry: FunctionComponent<{ dict: any }> = ({ dict }) => {
   const router = useRouter();
   const path = usePathname();
   const currentLang = path.match(/(?<=\/)(en|es|ar|pt)(?=\/)/)?.[0] ?? "en";
+  const { address, isConnected } = useAccount();
+  const chip = useChip();
+  const [open, setOpen] = useState<boolean>(false);
+
+  const label =
+    isConnected && address
+      ? `${address.slice(0, 6)}...${address.slice(-4)}`
+      : chip.connected
+        ? `${dict?.chip}`
+        : dict?.connectWallet;
+
   return (
     <div className="relative w-full flex-row flex-wrap h-fit flex items-start justify-center gap-3">
-      {(path?.includes("/create") ||
-        path?.includes("/manage") ||
-        path?.includes("/info") ||
-        path?.includes("/walkaway") ||
-        path?.includes("/race-condition")) && (
+      {!/^\/(en|es|ar|pt)?\/?$/.test(path || "/") && (
         <ActionButton
           showIcon={false}
           connect={true}
@@ -23,20 +32,13 @@ const HeaderEntry: FunctionComponent<{ dict: any }> = ({ dict }) => {
           onClick={() => router.push(`/${currentLang}`)}
         />
       )}
-      <ConnectKitButton.Custom>
-        {({ isConnected, show, address }) => (
-          <ActionButton
-            showIcon={false}
-            label={
-              isConnected && address
-                ? `${address.slice(0, 6)}...${address.slice(-4)}`
-                : dict?.connectWallet
-            }
-            onClick={show}
-            connect={true}
-          />
-        )}
-      </ConnectKitButton.Custom>
+      <ActionButton
+        showIcon={false}
+        label={label}
+        onClick={() => setOpen(true)}
+        connect={true}
+      />
+      <ConnectModal dict={dict} open={open} onClose={() => setOpen(false)} />
     </div>
   );
 };

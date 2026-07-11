@@ -1,45 +1,101 @@
-import { hash2 } from "./poseidon";
+import { Identity } from "@semaphore-protocol/core";
+import { sha256, toHex } from "viem";
+import { poseidon1 } from "poseidon-lite";
 
-const KEY = "matroid-zk-identity";
+const BRIDGE_URL =
+  process.env.NEXT_PUBLIC_CHIP_BRIDGE || "http://localhost:7151";
 
-export type Identity = { deviceSecret: string; chipField: string };
+let chipIdentity: Identity | null = null;
 
-const randomField = (): bigint => {
-  const b = crypto.getRandomValues(new Uint8Array(31));
-  let x = 0n;
-  for (const v of b) x = (x << 8n) + BigInt(v);
-  return x;
+const listeners = new Set<() => void>();
+
+export const subscribeIdentity = (cb: () => void): (() => void) => {
+  listeners.add(cb);
+  return () => {
+    listeners.delete(cb);
+  };
 };
 
-export const getIdentity = (): Identity | null => {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(KEY);
-  return raw ? (JSON.parse(raw) as Identity) : null;
+const notifyIdentity = (): void => {
+  listeners.forEach((cb) => cb());
 };
+
+export const connectChip = async (): Promise<Identity> => {
+  const res = await fetch(`${BRIDGE_URL}/secret`).catch(() => null);
+  if (!res || !res.ok) {
+    throw new Error(
+      "chip bridge not reachable — is the bridge running with the SE051 connected?",
+    );
+  }
+  const data = (await res.json()) as {
+    identitySeed?: string;
+    error?: string;
+  };
+  if (!data.identitySeed) {
+    throw new Error(data.error || "chip bridge returned no secret");
+  }
+  chipIdentity = new Identity(data.identitySeed);
+  notifyIdentity();
+  return chipIdentity;
+};
+
+export const disconnectChip = (): void => {
+  chipIdentity = null;
+  notifyIdentity();
+};
+
+export const getIdentity = (): Identity | null => chipIdentity;
 
 export const ensureIdentity = (): Identity => {
-  const existing = getIdentity();
-  if (existing) return existing;
-  const id: Identity = {
-    deviceSecret: randomField().toString(),
-    chipField: randomField().toString(),
+  if (!chipIdentity) {
+    throw new Error("chip not connected — tap connect first");
+  }
+  return chipIdentity;
+};
+
+export const fetchAttestation = async (
+  freshHex: string,
+): Promise<Record<string, unknown>> => {
+  const res = await fetch(`${BRIDGE_URL}/attest?fresh=${freshHex}`).catch(
+    () => null,
+  );
+  if (!res) {
+    throw new Error(
+      `chip bridge not reachable at ${BRIDGE_URL} — open the rezygcki app and turn on the browser bridge`,
+    );
+  }
+  const data = (await res.json().catch(() => ({}))) as {
+    inputs?: Record<string, unknown>;
+    error?: string;
   };
-  localStorage.setItem(KEY, JSON.stringify(id));
-  return id;
+  if (!res.ok || !data.inputs) {
+    throw new Error(
+      data.error
+        ? `attestation failed: ${data.error}`
+        : `attestation failed (bridge returned ${res.status})`,
+    );
+  }
+  return data.inputs;
 };
 
-export const commitmentOf = (id: Identity): bigint =>
-  hash2(BigInt(id.deviceSecret), BigInt(id.chipField));
-
-export const actionNullifier = (id: Identity, scope: bigint): bigint =>
-  hash2(BigInt(id.deviceSecret), scope);
-
-export const randomSalt = (): bigint => {
-  const b = crypto.getRandomValues(new Uint8Array(31));
-  let x = 0n;
-  for (const v of b) x = (x << 8n) + BigInt(v);
-  return x;
+export const freshnessFor = (commitment: bigint): string => {
+  const be32 = toHex(commitment, { size: 32 });
+  return sha256(be32).slice(2, 34);
 };
 
-export const tagFromSalt = (id: Identity, salt: bigint): bigint =>
-  hash2(BigInt(id.deviceSecret), salt);
+export const enrollNullifierFrom = (chipIdHex: string): bigint =>
+  poseidon1([BigInt(chipIdHex)]);
+
+export const enrollProofInputs = (
+  chipAttest: Record<string, unknown>,
+  freshHex: string,
+): Record<string, unknown> => {
+  const chipId = String(chipAttest.chipId);
+  const { chipId: _drop, ...rest } = chipAttest;
+  void _drop;
+  return {
+    ...rest,
+    fresh_bind: BigInt("0x" + freshHex).toString(),
+    enroll_nullifier: enrollNullifierFrom(chipId).toString(),
+  };
+};

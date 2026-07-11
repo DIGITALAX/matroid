@@ -15,17 +15,31 @@
   },
   {
     "type": "function",
-    "name": "nextLeafIndex",
+    "name": "hasEnrolled",
     "stateMutability": "view",
-    "inputs": [],
-    "outputs": [{ "type": "uint32" }]
+    "inputs": [{ "name": "identityCommitment", "type": "uint256" }],
+    "outputs": [{ "type": "bool" }]
   },
   {
     "type": "function",
-    "name": "commitments",
+    "name": "enrollmentCount",
     "stateMutability": "view",
-    "inputs": [{ "name": "commitment", "type": "bytes32" }],
-    "outputs": [{ "type": "bool" }]
+    "inputs": [],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "groupId",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "semaphore",
+    "stateMutability": "view",
+    "inputs": [],
+    "outputs": [{ "type": "address" }]
   },
   {
     "type": "function",
@@ -40,7 +54,7 @@
     "stateMutability": "nonpayable",
     "inputs": [
       { "name": "proof", "type": "bytes" },
-      { "name": "commitment", "type": "bytes32" },
+      { "name": "identityCommitment", "type": "uint256" },
       { "name": "enrollNullifier", "type": "bytes32" }
     ],
     "outputs": []
@@ -49,13 +63,10 @@
     "type": "event",
     "name": "Enrolled",
     "inputs": [
-      { "name": "commitment", "type": "bytes32", "indexed": true },
-      { "name": "leafIndex", "type": "uint32", "indexed": false },
-      { "name": "root", "type": "bytes32", "indexed": false }
+      { "name": "identityCommitment", "type": "uint256", "indexed": true },
+      { "name": "enrollNullifier", "type": "bytes32", "indexed": false }
     ]
   },
   { "type": "error", "name": "AlreadyEnrolled", "inputs": [] },
-  { "type": "error", "name": "BadProof", "inputs": [] },
-  { "type": "error", "name": "TreeFull", "inputs": [] },
-  { "type": "error", "name": "CommitmentExists", "inputs": [] }
+  { "type": "error", "name": "BadProof", "inputs": [] }
 ]

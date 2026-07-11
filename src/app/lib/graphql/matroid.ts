@@ -36,7 +36,7 @@ export const ENROLLMENTS_QUERY = `
 export const BALANCE_LEAVES_QUERY = `
   query BalanceLeaves {
     balanceLeaves(first: 1000, orderBy: leafIndex, orderDirection: asc) {
-      holder
+      balanceKey
       balance
       leafIndex
     }
@@ -60,10 +60,13 @@ export const PROJECTS_PANEL_QUERY = `
       monaOut
       monaTxCount
       monaUniqueUsers
+      metadataUri
       metadata {
         title
         image
         description
+        link
+        languages
       }
     }
   }

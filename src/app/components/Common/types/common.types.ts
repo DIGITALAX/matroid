@@ -15,10 +15,17 @@ export type ActionButtonProps = {
   connect?: boolean;
   onClick?: () => void;
   disabled?: boolean;
+  loading?: boolean;
   size?: "sm" | "md";
   className?: string;
   type?: "button" | "submit";
   showIcon?: boolean;
+};
+
+export type ChipEnrollData = {
+  commitment: `0x${string}`;
+  proof: `0x${string}`;
+  enrollNullifier: `0x${string}`;
 };
 
 export interface CoreContractAddresses {

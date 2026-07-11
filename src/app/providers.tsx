@@ -1,23 +1,31 @@
 "use client";
-import { createContext } from "react";
+import { createContext, SetStateAction, useState } from "react";
 import { WagmiProvider, createConfig, http } from "wagmi";
 import { ConnectKitProvider } from "connectkit";
 import { chains } from "@lens-chain/sdk/viem";
-import { zksyncInMemoryNode } from "viem/chains";
+import { zksyncInMemoryNode, anvil } from "viem/chains";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { walletConnect, coinbaseWallet, injected } from "wagmi/connectors";
+import { TxModal } from "./lib/types/tx";
 
 const queryClient = new QueryClient();
 
-export const ModalContext = createContext<{} | undefined>(undefined);
+export const ModalContext = createContext<
+  | {
+      txModal: TxModal;
+      setTxModal: (e: SetStateAction<TxModal>) => void;
+    }
+  | undefined
+>(undefined);
 
 export const config = createConfig({
-  chains: [chains.mainnet, zksyncInMemoryNode],
+  chains: [chains.mainnet, zksyncInMemoryNode, anvil],
   transports: {
     [chains.mainnet.id]: http("https://rpc.lens.xyz"),
     [zksyncInMemoryNode.id]: http(
       process.env.NEXT_PUBLIC_ZKSYNC_RPC_URL || "http://127.0.0.1:8011",
     ),
+    [anvil.id]: http("http://127.0.0.1:8545"),
   },
   ssr: true,
   connectors: [
@@ -48,11 +56,17 @@ export const config = createConfig({
 });
 
 export default function Providers({ children }: { children: React.ReactNode }) {
+  const [txModal, setTxModal] = useState<TxModal>({
+    open: false,
+    status: "wallet",
+  });
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
         <ConnectKitProvider>
-          <ModalContext.Provider value={{}}>{children}</ModalContext.Provider>
+          <ModalContext.Provider value={{ txModal, setTxModal }}>
+            {children}
+          </ModalContext.Provider>
         </ConnectKitProvider>
       </QueryClientProvider>
     </WagmiProvider>

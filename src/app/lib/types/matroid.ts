@@ -30,10 +30,13 @@ export type ProjectMetadata = {
   title?: string | null;
   image?: string | null;
   description?: string | null;
+  link?: string | null;
+  languages?: string[] | null;
 };
 
 export type ProjectListItem = {
   id: SubgraphId;
+  metadataUri?: string | null;
   registeredAt?: string | null;
   monaIn?: string | null;
   monaOut?: string | null;

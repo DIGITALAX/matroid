@@ -24,14 +24,27 @@
     "type": "function",
     "name": "register",
     "stateMutability": "nonpayable",
-    "inputs": [{ "name": "holder", "type": "address" }],
+    "inputs": [
+      {
+        "name": "linkProof",
+        "type": "tuple",
+        "components": [
+          { "name": "merkleTreeDepth", "type": "uint256" },
+          { "name": "merkleTreeRoot", "type": "uint256" },
+          { "name": "nullifier", "type": "uint256" },
+          { "name": "message", "type": "uint256" },
+          { "name": "scope", "type": "uint256" },
+          { "name": "points", "type": "uint256[8]" }
+        ]
+      }
+    ],
     "outputs": [{ "type": "bytes32" }]
   },
   {
     "type": "event",
     "name": "Registered",
     "inputs": [
-      { "name": "holder", "type": "address", "indexed": true },
+      { "name": "balanceKey", "type": "uint256", "indexed": true },
       { "name": "balance", "type": "uint256", "indexed": false },
       { "name": "leafIndex", "type": "uint32", "indexed": false },
       { "name": "root", "type": "bytes32", "indexed": false }
@@ -39,5 +52,7 @@
   },
   { "type": "error", "name": "NotAHolder", "inputs": [] },
   { "type": "error", "name": "BalanceTooLarge", "inputs": [] },
-  { "type": "error", "name": "TreeFull", "inputs": [] }
+  { "type": "error", "name": "TreeFull", "inputs": [] },
+  { "type": "error", "name": "BadScope", "inputs": [] },
+  { "type": "error", "name": "BadProof", "inputs": [] }
 ]

@@ -3,7 +3,7 @@ import { BALANCE_LEAVES_QUERY } from "@/app/lib/graphql/matroid";
 import { IncrementalMerkleTree, MerkleProof } from "./merkle";
 import { hash2 } from "./poseidon";
 
-type RawLeaf = { holder: string; balance: string; leafIndex: number };
+type RawLeaf = { balanceKey: string; balance: string; leafIndex: number };
 type BalanceLeavesResponse = { balanceLeaves: RawLeaf[] };
 
 export type BalanceProof = {
@@ -13,25 +13,41 @@ export type BalanceProof = {
   index: number;
 };
 
+export type BalanceResult =
+  | { ok: true; data: BalanceProof }
+  | { ok: false; reason: "unregistered" | "registeredLate" | "noSnapshot" };
+
 export const buildBalanceProof = async (
-  holder: bigint,
-): Promise<BalanceProof | null> => {
-  const data = await fetchMatroidGraphQL<BalanceLeavesResponse>({
-    query: BALANCE_LEAVES_QUERY,
-  });
+  balanceKey: bigint,
+  targetRoot?: bigint,
+): Promise<BalanceResult> => {
+  const data = await fetchMatroidGraphQL<BalanceLeavesResponse>({ query: BALANCE_LEAVES_QUERY });
   const rows = (data?.balanceLeaves ?? [])
     .slice()
     .sort((a, b) => a.leafIndex - b.leafIndex);
 
-  const tree = new IncrementalMerkleTree();
-  for (const r of rows) tree.insert(hash2(BigInt(r.holder), BigInt(r.balance)));
-
-  const mine = rows.filter((r) => BigInt(r.holder) === holder);
-  if (mine.length === 0) return null;
+  const mine = rows.filter((r) => BigInt(r.balanceKey) === balanceKey);
+  if (mine.length === 0) return { ok: false, reason: "unregistered" };
   const latest = mine[mine.length - 1];
   const balance = BigInt(latest.balance);
-  const index = tree.indexOf(hash2(holder, balance));
-  if (index < 0) return null;
+  const myLeaf = hash2(balanceKey, balance);
 
-  return { proof: tree.proof(index), root: tree.root(), balance, index };
+  const tree = new IncrementalMerkleTree();
+  let frozen = targetRoot === undefined;
+  for (const r of rows) {
+    tree.insert(hash2(BigInt(r.balanceKey), BigInt(r.balance)));
+    if (targetRoot !== undefined && tree.root() === targetRoot) {
+      frozen = true;
+      break;
+    }
+  }
+  if (!frozen) return { ok: false, reason: "noSnapshot" };
+
+  const index = tree.indexOf(myLeaf);
+  if (index < 0) return { ok: false, reason: "registeredLate" };
+
+  return {
+    ok: true,
+    data: { proof: tree.proof(index), root: tree.root(), balance, index },
+  };
 };

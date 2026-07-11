@@ -2,9 +2,9 @@ import { CoreContractAddresses } from "../components/Common/types/common.types";
 
 export const LOCALES: string[] = ["en", "es", "pt", "ar"];
 
-export const INFURA_GATEWAY: string = "https://thedial.infura-ipfs.io";
+export const INFURA_GATEWAY: string = "https://cdn.digitalax.xyz";
 export const INFURA_GATEWAY_INTERNAL: string =
-  "https://digitalax.xyz/api/infura/";
+  "https://cdn.digitalax.xyz/ipfs/";
 
 export const idiomaAIndice: { [key in Idiomas]: number } = {
   ["en"]: 0,
@@ -34,6 +34,12 @@ export const NETWORKS = {
     rpcUrl: "http://127.0.0.1:8545",
     blockExplorer: "https://explorer.lens.xyz",
   },
+  ZKSYNC: {
+    chainId: 260,
+    name: "ZKsync Local",
+    rpcUrl: "http://127.0.0.1:8011",
+    blockExplorer: "https://explorer.lens.xyz",
+  },
   LENS_TESTNET: {
     chainId: 37111,
     name: "Lens Network Testnet",
@@ -50,18 +56,15 @@ export const NETWORKS = {
 
 export type NetworkConfig = (typeof NETWORKS)[keyof typeof NETWORKS];
 
-export const DEFAULT_NETWORK =
-  // process.env.NODE_ENV === "production"
-  //   ?
-  NETWORKS.LENS_MAINNET;
-// : NETWORKS.LENS_TESTNET;
-
 export const getCurrentNetwork = (): NetworkConfig => {
-  // const isMainnet = process.env.NEXT_PUBLIC_NETWORK === "mainnet";
-  // const isMainnet = true;
-  // return isMainnet ? NETWORKS.LENS_MAINNET : NETWORKS.LENS_TESTNET;
+  const net = process.env.NEXT_PUBLIC_NETWORK;
+  if (net === "anvil") return NETWORKS.ANVIL;
+  if (net === "zksync") return NETWORKS.ZKSYNC;
+  if (net === "testnet") return NETWORKS.LENS_TESTNET;
   return NETWORKS.LENS_MAINNET;
 };
+
+export const DEFAULT_NETWORK = getCurrentNetwork();
 
 export const getNetworkByChainId = (chainId: number): NetworkConfig => {
   const match = Object.values(NETWORKS).find(
@@ -72,18 +75,32 @@ export const getNetworkByChainId = (chainId: number): NetworkConfig => {
 
 export const CORE_CONTRACT_ADDRESSES: Record<number, CoreContractAddresses> = {
   [NETWORKS.ANVIL.chainId]: {
-    Mona: "0x700b6a60ce7eaaea56f065753d8dcb9653dbad35",
-    StakingFactory: "0xa15bb66138824a1c7167f5e85b957d04dd34e468",
-    SignalRegistry: "0xb19b36b1456e65e3a6d514d3f715f204bd59f431",
-    SignalKit: "0x8ce361602b935680e8dec218b820ff5056beb7af",
-    SignalScorer: "0xe1da8919f262ee86f9be05059c9280142cf23f48",
-    GlobalStakingPool: "0x0c8e79f3534b00d9a3d4a856b665bf4ebc22f2ba",
-    Treasury: "0xed1db453c3156ff3155a97ad217b3087d5dc5f6e",
-    SlashingCouncil: "0xf7cd8fa9b94db2aa972023b379c7f72c65e4de9d",
-    MatroidGovernance: "0x",
+    Mona: "0x1F0151386fB0AbBF0273238dF5E9bc519DE5e20B",
+    StakingFactory: "0x5B11c36bf87ED2EAc102C42E9528eC99D77f7aFd",
+    SignalRegistry: "0x29c6fF2E3D04a9f37e7af1fF9b38C9E2e9079FfA",
+    SignalKit: "0xd4567AA4Fd1B32A16c16CBFF9D9a69e51CF72293",
+    SignalScorer: "0xcFDE18a0f130bBAfe0037072407F83899D49414f",
+    GlobalStakingPool: "0x3ccA24e1A0e49654bc3482ab70199b7400eb7A3a",
+    Treasury: "0xfC3c03385dA8D5Adfb8BDF5f5fe156fb5B3a6Ee2",
+    SlashingCouncil: "0x1055780Bd25e2F698E7c9a95FBaf4cb565A23A14",
+    MatroidGovernance: "0x9035E63C5Ac74dE843F176BE6B9869cA2385C61d",
     MatroidAnonGovernance: "0x",
-    IdentityRegistry: "0x",
-    MonaBalanceTree: "0x",
+    IdentityRegistry: "0x22F4D93be0E8C0C081e74c0d5e697B64eEA007FF",
+    MonaBalanceTree: "0x23ceE3FB585b1e5092b7CFB222e8e873B05E9519",
+  },
+  [NETWORKS.ZKSYNC.chainId]: {
+    Mona: "0x1F0151386fB0AbBF0273238dF5E9bc519DE5e20B",
+    StakingFactory: "0x5B11c36bf87ED2EAc102C42E9528eC99D77f7aFd",
+    SignalRegistry: "0x29c6fF2E3D04a9f37e7af1fF9b38C9E2e9079FfA",
+    SignalKit: "0xd4567AA4Fd1B32A16c16CBFF9D9a69e51CF72293",
+    SignalScorer: "0xcFDE18a0f130bBAfe0037072407F83899D49414f",
+    GlobalStakingPool: "0x3ccA24e1A0e49654bc3482ab70199b7400eb7A3a",
+    Treasury: "0xfC3c03385dA8D5Adfb8BDF5f5fe156fb5B3a6Ee2",
+    SlashingCouncil: "0x1055780Bd25e2F698E7c9a95FBaf4cb565A23A14",
+    MatroidGovernance: "0x9035E63C5Ac74dE843F176BE6B9869cA2385C61d",
+    MatroidAnonGovernance: "0xf43624d811c5DC9eF91cF237ab9B8eE220D438eE",
+    IdentityRegistry: "0x22F4D93be0E8C0C081e74c0d5e697B64eEA007FF",
+    MonaBalanceTree: "0x23ceE3FB585b1e5092b7CFB222e8e873B05E9519",
   },
   [NETWORKS.LENS_MAINNET.chainId]: {
     Mona: "0x",

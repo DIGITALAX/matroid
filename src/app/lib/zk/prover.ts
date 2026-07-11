@@ -2,7 +2,7 @@ import { Noir } from "@noir-lang/noir_js";
 import { Barretenberg, UltraHonkBackend } from "@aztec/bb.js";
 import { toHex } from "viem";
 
-type CircuitName = "voting";
+type CircuitName = "voting" | "enrollment";
 
 const cache: { [k: string]: { bytecode: string } } = {};
 
@@ -20,6 +20,15 @@ const loadCircuit = async (name: CircuitName) => {
   const json = await res.json();
   cache[name] = json;
   return json;
+};
+
+export const circuitAvailable = async (name: CircuitName): Promise<boolean> => {
+  try {
+    await loadCircuit(name);
+    return true;
+  } catch {
+    return false;
+  }
 };
 
 export const prove = async (

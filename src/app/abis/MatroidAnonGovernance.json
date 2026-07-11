@@ -12,7 +12,7 @@
     "stateMutability": "view",
     "inputs": [{ "name": "id", "type": "uint256" }],
     "outputs": [
-      { "name": "identityRoot", "type": "bytes32" },
+      { "name": "identityRoot", "type": "uint256" },
       { "name": "balanceRoot", "type": "bytes32" },
       { "name": "start", "type": "uint64" },
       { "name": "end", "type": "uint64" },
@@ -77,10 +77,32 @@
     "name": "vote",
     "stateMutability": "nonpayable",
     "inputs": [
-      { "name": "proof", "type": "bytes" },
-      { "name": "proposalId", "type": "uint256" },
-      { "name": "choice", "type": "uint8" },
-      { "name": "nullifier", "type": "bytes32" }
+      {
+        "name": "voteProof",
+        "type": "tuple",
+        "components": [
+          { "name": "merkleTreeDepth", "type": "uint256" },
+          { "name": "merkleTreeRoot", "type": "uint256" },
+          { "name": "nullifier", "type": "uint256" },
+          { "name": "message", "type": "uint256" },
+          { "name": "scope", "type": "uint256" },
+          { "name": "points", "type": "uint256[8]" }
+        ]
+      },
+      {
+        "name": "balanceLinkProof",
+        "type": "tuple",
+        "components": [
+          { "name": "merkleTreeDepth", "type": "uint256" },
+          { "name": "merkleTreeRoot", "type": "uint256" },
+          { "name": "nullifier", "type": "uint256" },
+          { "name": "message", "type": "uint256" },
+          { "name": "scope", "type": "uint256" },
+          { "name": "points", "type": "uint256[8]" }
+        ]
+      },
+      { "name": "balanceZkProof", "type": "bytes" },
+      { "name": "proposalId", "type": "uint256" }
     ],
     "outputs": []
   },
@@ -108,7 +130,7 @@
     "inputs": [
       { "name": "id", "type": "uint256", "indexed": true },
       { "name": "choice", "type": "uint8", "indexed": false },
-      { "name": "nullifier", "type": "bytes32", "indexed": false }
+      { "name": "nullifier", "type": "uint256", "indexed": false }
     ]
   },
   {
@@ -124,8 +146,9 @@
   { "type": "error", "name": "VotingClosed", "inputs": [] },
   { "type": "error", "name": "VotingOpen", "inputs": [] },
   { "type": "error", "name": "InvalidChoice", "inputs": [] },
-  { "type": "error", "name": "AlreadyVoted", "inputs": [] },
   { "type": "error", "name": "AlreadyExecuted", "inputs": [] },
   { "type": "error", "name": "BadProof", "inputs": [] },
+  { "type": "error", "name": "BadScope", "inputs": [] },
+  { "type": "error", "name": "StaleRoot", "inputs": [] },
   { "type": "error", "name": "BelowFloor", "inputs": [] }
 ]

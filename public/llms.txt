@@ -54,7 +54,7 @@ that activity resolves into distribution. projects receive $MONA from the treasu
 
 to ensure contract security and preserve flexibility, the first deployment targets the treasury's remaining 843 $MONA for distribution over an approximately four-year window. this target grows whenever anyone deposits more $MONA, and the duration can be extended — only lengthened, never shortened — by $MONA-holder governance. the schedule can stretch, but it can never be rugged.
 
-because of the digitalax ecosystem's active development and existing usage on lens chain, the matroid contract suite deploys there first. the design remains chain-agnostic. as other evm-compatible, zk-enabled, and decentralized chains align, staged deployments allow the system to extend and migrate without disrupting the underlying structure.
+the launch of matroid is planned for lens chain, where the digitalax ecosystem already has active usage. in recent months, though, the team behind lens has been selling off parts of the stack, and it is not clear what they intend to keep running, wind down, or keep building. it would be a strange outcome to deploy the whole system there only for the chain to be shut down a week later — especially ironic for a project whose entire purpose is removing dependencies. so while lens remains the plan, the design stays deliberately chain-agnostic. if the situation shifts before the first project goes live on dx.computer, digitalax is actively evaluating other chains, with a strong preference for networks that put zero-knowledge and privacy at the center. spinning up a dedicated chain is not off the table either — just not the top development priority right now. staged, chain-agnostic deployment lets the system extend or migrate without disrupting the underlying structure.
 
 a first project to integrate the matroid kit is dx.computer, an open-source maker kit registry — designers and makers register kits, fund treeliner grants, deploy cyberswagman agents, and govern shared decisions, anonymously where it matters. dx.computer routes its $MONA flows through the kit and anchors its activity on lens.
 
@@ -119,7 +119,7 @@ Matroid is a fully on-chain, permissionless activity distribution protocol that 
 
 **Key Functions**:
 - `setMatroidKit(address)` - one-time initialization (onlyOwner)
-- `registerProject(address project, bytes32 metadata, bool pool)` - called by MatroidKit, validates contract, optionally creates pools
+- `registerProject(address project, string metadata, bool pool)` - called by MatroidKit, validates contract, stores the project's metadata URI, optionally creates pools
 - `createProjectPool()` - callable by any registered project to create pools post-registration
 - `setRewardSplits(uint16 globalSplitBps, uint16 projectErc20SplitBps, uint16 projectNftSplitBps)` - configures reward distribution (sum ≤10000)
 - `setClaimer(address claimer, bool allowed)` - project authorizes/revokes claim addresses
@@ -147,7 +147,7 @@ Matroid is a fully on-chain, permissionless activity distribution protocol that 
 - `MatroidRegistry public immutable registry` - registry reference
 
 **Functions**:
-- `registerProject(bytes32 metadata, bool pool)` - registers `msg.sender` as project, emits `ProjectRegistered`
+- `registerProject(string metadata, bool pool)` - registers `msg.sender` as project with its metadata URI, emits `ProjectRegistered`
 - `matroidIn(address user, address token, uint256 amount)` - records user→project flow, calls `registry.recordFlow(..., true)`
 - `matroidOut(address user, address token, uint256 amount)` - records project→user flow, calls `registry.recordFlow(..., false)`
 - `setVerification(address verifier, address roots)` - owner, set-once; wires the chip-activity ZK verifier + IdentityRegistry (for `isKnownRoot`)
@@ -155,11 +155,31 @@ Matroid is a fully on-chain, permissionless activity distribution protocol that 
 - `matroidOutVerified(...)` - same, for outflows
 
 **Events**:
-- `ProjectRegistered(address indexed project, bytes32 metadata)`
+- `ProjectRegistered(address indexed project, string metadata)`
 - `MatroidIn(address indexed project, address indexed user, address indexed token, uint256 amount)`
 - `MatroidOut(address indexed project, address indexed user, address indexed token, uint256 amount)`
 
 **Flow Validation**: All flows validated in registry via `safeTransferFrom` with before/after balance checks (handles fee-on-transfer tokens).
+
+**Project Metadata URI**: the `metadata` argument to `registerProject` is a URI string the project hosts itself — either `ipfs://<cid>` (immutable, recommended) or `https://<host>/<path>` on an endpoint it controls. It points to a JSON document that describes the project for any interface listing it (frontends, the matroid app, the staking-pool cards). The URI is stored on-chain as `Project.metadata` and re-emitted in `ProjectRegistered(address indexed project, string metadata)`. The subgraph reads it into `Project.metadataUri`; for `ipfs://` URIs it spawns an IPFS file-datasource that parses the JSON into a `ProjectMetadata` entity (`title`, `description`, `image`, `link`, `languages`) so interfaces can render a project card without touching IPFS themselves.
+
+JSON schema (every field optional; `title`/`description`/`image` are what pool cards expect):
+```json
+{
+  "title": "dx.computer",
+  "description": "open-source maker kit registry — register kits, fund grants, deploy agents, govern anonymously",
+  "image": "ipfs://Qm...",
+  "link": "https://app.dx.computer",
+  "languages": ["en", "es", "pt", "ar"]
+}
+```
+- `title` — display name on the project/pool card
+- `description` — short summary (cards line-clamp to ~2 lines)
+- `image` — cover/logo, `ipfs://` or `https://`; interfaces resolve `ipfs://` through their own gateway
+- `link` — the project's own frontend/website (if exists)
+- `languages` — ISO codes the project's interface is available in
+
+The content is client-hosted by design — matroid stores only the pointer, never the document, so a project can update its own presentation without a contract call (when hosted at a mutable `https://` URL) or pin and manage it (when hosted on IPFS).
 
 #### 3. MatroidScorer.sol
 **Purpose**: Pure on-chain scoring algorithm implementation.
@@ -615,7 +635,7 @@ function withdrawStake(uint256 epoch, address project) external nonReentrant {
 
 **Errors**: `NoProposal()`, `VotingClosed()`, `VotingOpen()`, `InvalidChoice()`, `AlreadyVoted()`, `AlreadyExecuted()`, `BadProof()`, `BelowFloor()`
 
-**Note**: shares its identity/balance proving infrastructure (IdentityRegistry, MonaBalanceTree, the `voting` Noir circuit) with dx.computer's SponsorCouncil — same chip, same MONA-balance commitment, reusable across any project that wants anonymous, eligibility-gated voting.
+**Note**: shares its identity/balance proving infrastructure (IdentityRegistry, MonaBalanceTree, the `voting` Noir circuit) with dx.computer's DxCouncil (dx.app-only governance — wallet bans + quorum + voting window) and matroid's SponsorCouncil (paymaster governance — project fuel blacklist/cap + quorum) — same chip, same MONA-balance commitment, reusable across any project that wants anonymous, eligibility-gated voting.
 
 ## Data Structures (MatroidLibrary.sol)
 
@@ -624,7 +644,7 @@ function withdrawStake(uint256 epoch, address project) external nonReentrant {
 struct Project {
     bool registered;
     address project;
-    bytes32 metadata;               // IPFS hash or identifier
+    string metadata;                // metadata URI (ipfs:// or https://) → off-chain JSON
     uint64 registeredAt;
     uint256 monaIn;                 // lifetime MONA received
     uint256 monaOut;                // lifetime MONA sent
@@ -1248,8 +1268,8 @@ contract MyProject {
         kit = IMatroidKit(_kit);
         registry = IMatroidRegistry(_registry);
 
-        // Register project and create pools
-        kit.registerProject(keccak256("MyProject v1"), true);
+        // Register project and create pools (metadata URI → client-hosted JSON)
+        kit.registerProject("ipfs://Qm.../project.json", true);
 
         // Set reward splits: 30% global, 50% ERC20 pool, 20% NFT pool
         registry.setRewardSplits(3000, 5000, 2000);
@@ -1343,7 +1363,7 @@ The matroid subgraph indexes the protocol's core entities (`Global`, `Project`, 
 - `SponsorVault` (singleton) — `totalPoints`, `accRewardPerPoint`, `totalDeposited`, `totalRewards`, `totalClaimed`, `sponsorCount`
 - `Sponsor` — per depositor: `points`, `totalDeposited`, `totalClaimed`
 
-**Shared ZK infrastructure** (also consumed by dx.computer's SponsorCouncil and by MatroidKit's chip-weighted activity proofs):
+**Shared ZK infrastructure** (also consumed by dx.computer's DxCouncil, matroid's SponsorCouncil paymaster governance, and MatroidKit's chip-weighted activity proofs):
 - `Enrollment` — one per `IdentityRegistry.Enrolled` event: `commitment`, `leafIndex`, `root`. The client rebuilds the identity Merkle tree from this list (ordered by `leafIndex`) to produce membership proofs for voting.
 - `BalanceLeaf` — one per `MonaBalanceTree.Registered` event: `holder`, `balance`, `leafIndex`, `root`. Same role, for the balance-eligibility proof.
 

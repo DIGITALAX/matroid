@@ -1,5 +1,6 @@
 import Footer from "../components/Common/modules/Footer";
 import Header from "../components/Common/modules/Header";
+import TxPopup from "../components/Common/modules/TxPopup";
 
 export type tParams = Promise<{ lang: string }>;
 
@@ -18,6 +19,7 @@ export default async function RootLayout({
     <>
       <Header params={params} />
       {children}
+      <TxPopup params={params} />
       <Footer params={params} />
     </>
   );

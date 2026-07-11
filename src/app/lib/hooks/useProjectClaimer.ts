@@ -1,6 +1,7 @@
 import { useMemo } from "react";
 import { useReadContract } from "wagmi";
 import { getABI } from "@/app/abis";
+import { DEFAULT_NETWORK } from "@/app/lib/constants";
 import { useCoreAddresses } from "@/app/lib/hooks/useCoreAddresses";
 
 type UseProjectClaimerResult = {
@@ -18,6 +19,7 @@ export const useProjectClaimer = (
   const result = useReadContract({
     address: addresses.SignalRegistry as `0x${string}`,
     abi: getABI("SignalRegistry"),
+    chainId: DEFAULT_NETWORK.chainId,
     functionName: "projectClaimers",
     args: enabled ? [project, claimer] : undefined,
     query: { enabled },

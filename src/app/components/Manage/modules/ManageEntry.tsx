@@ -7,10 +7,12 @@ import { formatToken } from "@/app/lib/format/units";
 import { formatDuration, formatTimestamp } from "@/app/lib/format/time";
 import ActionButton from "@/app/components/Common/modules/ActionButton";
 import { useManagePanel } from "@/app/lib/hooks/useManagePanel";
+import { useProjectMetas } from "@/app/lib/hooks/useProjectMetas";
 
 function ManageEntry({ dict }: { dict: any }): JSX.Element {
   const path = usePathname();
   const panel = useManagePanel();
+  const projectMetas = useProjectMetas(panel?.projects || []);
 
   return (
     <Caja title={`*${dict?.manage}*`}>
@@ -64,7 +66,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
           )}
 
           {panel.subgraphEnabled && !panel.loading && panel.error && (
-            <div className="text-sm text-red-400">{panel.error}</div>
+            <div className="text-sm text-red-400">{dict?.dataUnavailable}</div>
           )}
 
           {panel?.activeTab === "global" &&
@@ -209,7 +211,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
 
           {panel?.activeTab === "projects" && (
             <div className="w-full grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 text-left">
-              <div className="border border-black/60 bg-dullY/80 rounded p-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.projects}
                 </div>
@@ -234,7 +236,10 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                   {!panel?.projectsLoading &&
                     !panel?.projectsError &&
                     panel?.projects.map((project) => {
-                      const title = project.metadata?.title || dict?.untitled;
+                      const title =
+                        projectMetas[project.id]?.title ||
+                        project.metadata?.title ||
+                        dict?.untitled;
                       const active = project.id === panel?.selectedProject?.id;
                       return (
                         <button
@@ -258,14 +263,16 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                     })}
                 </div>
               </div>
-              <div className="border border-black/60 bg-dullY/80 rounded p-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.projectDetail}
                 </div>
                 {panel?.selectedProject ? (
                   <div className="mt-3 flex flex-col gap-3 text-sm">
                     <div className="text-lg font-digiB uppercase">
-                      {panel?.selectedProject.metadata?.title || dict?.untitled}
+                      {projectMetas[panel?.selectedProject.id]?.title ||
+                        panel?.selectedProject.metadata?.title ||
+                        dict?.untitled}
                     </div>
                     {panel?.selectedProject.metadata?.description && (
                       <div className="text-xs opacity-80">
@@ -273,7 +280,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                       </div>
                     )}
                     <div
-                      className="text-xs underline cursor-pointer"
+                      className="text-xs underline cursor-pointer break-all"
                       onClick={() =>
                         panel?.openAddress(panel?.selectedProject?.id)
                       }
@@ -311,10 +318,26 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
 
           {panel?.activeTab === "epochs" && (
             <div className="w-full grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-4 text-left">
-              <div className="border border-black/60 bg-dullY/80 rounded p-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.epochs}
                 </div>
+                {panel?.pendingEpoch !== null &&
+                  panel?.pendingEpoch !== undefined && (
+                    <div className="mt-3 flex flex-row flex-wrap items-center gap-2 border-2 border-black bg-yell px-3 py-2">
+                      <span className="text-xs">
+                        {dict?.epoch} {String(panel?.pendingEpoch)} ·{" "}
+                        {dict?.epochReady}
+                      </span>
+                      <ActionButton
+                        label={dict?.finalizeEpoch}
+                        onClick={panel?.handlers.finalizePending}
+                        disabled={panel?.disabled.finalizePending}
+                        loading={panel?.busy}
+                        size="sm"
+                      />
+                    </div>
+                  )}
                 <div className="mt-3 flex flex-col gap-2 max-h-[14rem] overflow-y-auto">
                   {panel?.epochsLoading && (
                     <div className="text-sm opacity-70">{dict?.loadingEpochs}</div>
@@ -338,7 +361,9 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                         <button
                           key={epoch.id}
                           type="button"
-                          onClick={() => panel?.setSelectedEpochId(epoch.id)}
+                          onClick={() =>
+                            panel?.selectEpoch(epoch.id, epoch.epoch)
+                          }
                           className={`w-full text-left px-3 py-2 border-2 border-black ${
                             active ? "bg-yell" : "bg-comp"
                           }`}
@@ -354,7 +379,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                     })}
                 </div>
               </div>
-              <div className="border border-black/60 bg-dullY/80 rounded p-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.epochDetail}
                 </div>
@@ -368,16 +393,34 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                         {dict?.finalizedAt}:{" "}
                         {formatTimestamp(panel?.selectedEpoch.blockTimestamp)}
                       </div>
-                      <div>
+                      <div className="break-all">
                         {dict?.totalScore}: {panel?.selectedEpoch.totalScore || "-"}
                       </div>
                       <div>
                         {dict?.activeProjects}:{" "}
                         {panel?.selectedEpoch.activeProjects || "-"}
                       </div>
-                      <div>
+                      <div  className="break-all">
                         {dict?.budget}: {formatToken(panel?.selectedEpoch.budget)}
                       </div>
+                      <div>
+                        {dict?.claimableLabel}:{" "}
+                        {panel?.alreadyClaimed
+                          ? dict?.alreadyClaimed
+                          : panel?.claimableAmount !== undefined &&
+                              panel?.claimableAmount > 0n
+                            ? `${formatToken(panel?.claimableAmount.toString())} MONA`
+                            : `≈ ${formatToken(panel?.selectedEpoch.budget)} MONA`}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      <ActionButton
+                        label={dict?.claim}
+                        onClick={panel?.handlers.claim}
+                        disabled={panel?.disabled.claim}
+                        loading={panel?.busy}
+                        size="sm"
+                      />
                     </div>
                   </div>
                 ) : (
@@ -391,7 +434,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
 
           {panel?.activeTab === "actions" && (
             <div className="w-full grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 text-left">
-              <div className="border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.globalMaintenance}
                 </div>
@@ -400,27 +443,37 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                     <label className="text-[10px] uppercase tracking-[0.2em] opacity-70">
                       {dict?.epoch}
                     </label>
-                    <select
-                      className="border-2 border-black bg-comp px-3 py-2 text-xs"
+                    <input
+                      className="relative w-full min-w-0 max-w-full border-2 border-black bg-comp px-3 py-2 text-xs"
                       value={panel?.actionEpoch}
+                      placeholder="0"
                       onChange={(event) =>
                         panel?.setActionEpoch(event.target.value)
                       }
-                    >
-                      <option value="">{dict?.selectEpoch}</option>
-                      {panel?.epochs.map((epoch) => (
-                        <option key={epoch.id} value={epoch.epoch || ""}>
-                          {dict?.epoch} {epoch.epoch ?? "-"}
-                        </option>
-                      ))}
-                    </select>
+                    />
+                    {panel?.epochs.length ? (
+                      <div className="flex flex-row flex-wrap gap-1">
+                        {panel?.epochs.map((epoch) => (
+                          <button
+                            key={epoch.id}
+                            type="button"
+                            className="text-[10px] underline"
+                            onClick={() =>
+                              panel?.setActionEpoch(epoch.epoch || "")
+                            }
+                          >
+                            {dict?.epoch} {epoch.epoch ?? "-"}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] uppercase tracking-[0.2em] opacity-70">
                       {dict?.project}
                     </label>
                     <select
-                      className="border-2 border-black bg-comp px-3 py-2 text-xs"
+                      className="relative w-full min-w-0 max-w-full border-2 border-black bg-comp px-3 py-2 text-xs"
                       value={panel?.actionProject}
                       onChange={(event) =>
                         panel?.setActionProject(event.target.value)
@@ -451,59 +504,47 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                     label={dict?.reconcileTarget}
                     onClick={panel?.handlers.reconcileTarget}
                     disabled={panel?.disabled.reconcileTarget}
-                    size="sm"
-                  />
-                  <ActionButton
-                    label={dict?.finalizeEpoch}
-                    onClick={panel?.handlers.finalizeEpoch}
-                    disabled={panel?.disabled.finalizeEpoch}
-                    size="sm"
-                  />
-                  <ActionButton
-                    label={dict?.computeClaimable}
-                    onClick={panel?.handlers.computeClaimable}
-                    disabled={panel?.disabled.computeClaimable}
+                    loading={panel?.busy}
                     size="sm"
                   />
                   <ActionButton
                     label={dict?.sweepExpired}
                     onClick={panel?.handlers.sweepExpired}
                     disabled={panel?.disabled.sweepExpired}
+                    loading={panel?.busy}
                     size="sm"
                   />
                   <ActionButton
                     label={dict?.resolveSlash}
                     onClick={panel?.handlers.resolveSlash}
                     disabled={panel?.disabled.resolveSlash}
+                    loading={panel?.busy}
                     size="sm"
                   />
                   <ActionButton
                     label={dict?.finalizeProposal}
                     onClick={panel?.handlers.finalizeProposal}
                     disabled={panel?.disabled.finalizeProposal}
+                    loading={panel?.busy}
                     size="sm"
                   />
                   <ActionButton
                     label={dict?.resolveFailure}
                     onClick={panel?.handlers.resolveFailure}
                     disabled={panel?.disabled.resolveFailure}
+                    loading={panel?.busy}
                     size="sm"
                   />
                 </div>
-                {panel?.actionsError && (
-                  <div className="text-xs text-red-400">
-                    {panel?.actionsError.message}
-                  </div>
-                )}
               </div>
-              <div className="border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.actionContext}
                 </div>
                 <div className="text-xs space-y-2">
-                  <div>{dict?.wallet}: {panel?.address || "-"}</div>
+                  <div className="break-all">{dict?.wallet}: {panel?.address || "-"}</div>
                   <div>{dict?.chain}: {panel?.chainId}</div>
-                  <div>
+                  <div className="break-all">
                     {dict?.selectedProject}:{" "}
                     {panel?.selectedProject?.metadata?.title || "-"}
                   </div>
@@ -521,7 +562,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
 
           {panel?.activeTab === "wallet" && (
             <div className="w-full grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-4 text-left">
-              <div className="border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.walletActions}
                 </div>
@@ -530,27 +571,37 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                     <label className="text-[10px] uppercase tracking-[0.2em] opacity-70">
                       {dict?.epoch}
                     </label>
-                    <select
-                      className="border-2 border-black bg-comp px-3 py-2 text-xs"
+                    <input
+                      className="relative w-full min-w-0 max-w-full border-2 border-black bg-comp px-3 py-2 text-xs"
                       value={panel?.walletEpoch}
+                      placeholder="0"
                       onChange={(event) =>
                         panel?.setWalletEpoch(event.target.value)
                       }
-                    >
-                      <option value="">{dict?.selectEpoch}</option>
-                      {panel?.epochs.map((epoch) => (
-                        <option key={epoch.id} value={epoch.epoch || ""}>
-                          {dict?.epoch} {epoch.epoch ?? "-"}
-                        </option>
-                      ))}
-                    </select>
+                    />
+                    {panel?.epochs.length ? (
+                      <div className="flex flex-row flex-wrap gap-1">
+                        {panel?.epochs.map((epoch) => (
+                          <button
+                            key={epoch.id}
+                            type="button"
+                            className="text-[10px] underline"
+                            onClick={() =>
+                              panel?.setWalletEpoch(epoch.epoch || "")
+                            }
+                          >
+                            {dict?.epoch} {epoch.epoch ?? "-"}
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="flex flex-col gap-2">
                     <label className="text-[10px] uppercase tracking-[0.2em] opacity-70">
                       {dict?.project}
                     </label>
                     <select
-                      className="border-2 border-black bg-comp px-3 py-2 text-xs"
+                      className="relative w-full min-w-0 max-w-full border-2 border-black bg-comp px-3 py-2 text-xs"
                       value={panel?.walletProject}
                       onChange={(event) =>
                         panel?.setWalletProject(event.target.value)
@@ -580,7 +631,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                       {dict?.voteAmount}
                     </label>
                     <input
-                      className="border-2 border-black bg-comp px-3 py-2 text-xs"
+                      className="relative w-full min-w-0 max-w-full border-2 border-black bg-comp px-3 py-2 text-xs"
                       value={panel?.voteAmount}
                       onChange={(event) =>
                         panel?.setVoteAmount(event.target.value)
@@ -593,7 +644,7 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                       {dict?.slashBps}
                     </label>
                     <input
-                      className="border-2 border-black bg-comp px-3 py-2 text-xs"
+                      className="relative w-full min-w-0 max-w-full border-2 border-black bg-comp px-3 py-2 text-xs"
                       value={panel?.slashBps}
                       onChange={(event) =>
                         panel?.setSlashBps(event.target.value)
@@ -614,61 +665,46 @@ function ManageEntry({ dict }: { dict: any }): JSX.Element {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <ActionButton
-                    label={dict?.claim}
-                    onClick={panel?.handlers.claim}
-                    disabled={panel?.disabled.claim}
-                    size="sm"
-                  />
-                  <ActionButton
                     label={dict?.vote}
                     onClick={panel?.handlers.vote}
                     disabled={panel?.disabled.vote}
+                    loading={panel?.busy}
                     size="sm"
                   />
                   <ActionButton
                     label={dict?.unvote}
                     onClick={panel?.handlers.unvote}
                     disabled={panel?.disabled.unvote}
+                    loading={panel?.busy}
                     size="sm"
                   />
                   <ActionButton
                     label={dict?.withdrawStake}
                     onClick={panel?.handlers.withdrawStake}
                     disabled={panel?.disabled.withdrawStake}
+                    loading={panel?.busy}
                     size="sm"
                   />
                   <ActionButton
                     label={dict?.claimVoterReward}
                     onClick={panel?.handlers.claimVoterReward}
                     disabled={panel?.disabled.claimVoterReward}
+                    loading={panel?.busy}
                     size="sm"
                   />
                 </div>
-                {panel?.actionsError && (
-                  <div className="text-xs text-red-400">
-                    {panel?.actionsError.message}
-                  </div>
-                )}
               </div>
-              <div className="border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
+              <div className="relative min-w-0 overflow-hidden border border-black/60 bg-dullY/80 rounded p-4 flex flex-col gap-4">
                 <div className="text-xs uppercase tracking-[0.2em] opacity-70">
                   {dict?.walletStatus}
                 </div>
                 <div className="text-xs space-y-2">
-                  <div>{dict?.wallet}: {panel?.address || "-"}</div>
+                  <div className="break-all">{dict?.wallet}: {panel?.address || "-"}</div>
                   <div>{dict?.chain}: {panel?.chainId}</div>
                   <div className="break-all">
                     {dict?.project}: {panel?.walletProject || "-"}
                   </div>
                   <div>{dict?.epoch}: {panel?.walletEpoch || "-"}</div>
-                  <div>
-                    {dict?.claimer}:{" "}
-                    {panel?.claimerLoading
-                      ? dict?.checking
-                      : panel?.isClaimer
-                        ? dict?.yes
-                        : dict?.no}
-                  </div>
                   {!panel?.isConnected && (
                     <div className="text-red-400">{dict?.connectWalletToAct}</div>
                   )}

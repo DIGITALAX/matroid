@@ -14,19 +14,15 @@ const nextConfig: NextConfig = {
       ...config.resolve.fallback,
       '@react-native-async-storage/async-storage': false,
     };
+    config.module.exprContextCritical = false;
     return config;
   },
   images: {
     remotePatterns: [
       {
         protocol: "https",
-        hostname: "thedial.infura-ipfs.io",
+        hostname: "cdn.digitalax.xyz",
         pathname: "/ipfs/**",
-      },
-      {
-        protocol: "https",
-        hostname: "digitalax.xyz",
-        pathname: "/api/infura/**",
       },
       {
         protocol: "https",
@@ -42,7 +38,7 @@ const nextConfig: NextConfig = {
     let headersConfig: any[] = [];
 
     const allowedOrigins = [
-      "https://thedial.infura-ipfs.io",
+      "https://cdn.digitalax.xyz",
       "https://digitalax.xyz",
     ];
     allowedOrigins.forEach((origin) => {

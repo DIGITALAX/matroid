@@ -1,7 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
-import { useAccount, useChainId } from "wagmi";
-import { isAddress } from "viem";
-import { getNetworkByChainId } from "@/app/lib/constants";
+import { useAccount, useChainId, useReadContract } from "wagmi";
+import { isAddress, type Abi } from "viem";
+import { DEFAULT_NETWORK, getNetworkByChainId } from "@/app/lib/constants";
+import { getABI } from "@/app/abis";
+import { useCoreAddresses } from "@/app/lib/hooks/useCoreAddresses";
 import { useGlobalPanel } from "@/app/lib/hooks/useGlobalPanel";
 import { useProjectsPanel } from "@/app/lib/hooks/useProjectsPanel";
 import { useEpochsPanel } from "@/app/lib/hooks/useEpochsPanel";
@@ -13,7 +15,7 @@ import { ProjectListItem, EpochItem } from "@/app/lib/types/matroid";
 type ManageTab = "global" | "projects" | "epochs" | "wallet" | "actions";
 
 export const useManagePanel = () => {
-  const subgraphEnabled = false;
+  const subgraphEnabled = true;
   const { globalPanel, stats, loading, error } = useGlobalPanel(subgraphEnabled);
   const {
     projects,
@@ -54,7 +56,7 @@ export const useManagePanel = () => {
   }, [epochs, selectedEpochId]);
 
   const { isClaimer, loading: claimerLoading } = useProjectClaimer(
-    walletProject,
+    actionProject,
     address,
   );
 
@@ -106,56 +108,118 @@ export const useManagePanel = () => {
     }
   }, [voteAmountWei]);
 
-  const canAct = isConnected && !actions.isPending;
+  const coreAddresses = useCoreAddresses();
+  const { data: claimableAmount } = useReadContract({
+    address: coreAddresses.Treasury as `0x${string}`,
+    abi: getABI("Treasury") as Abi,
+    chainId: DEFAULT_NETWORK.chainId,
+    functionName: "claimable",
+    args:
+      epochValue !== null && actionProjectValid
+        ? [epochValue, actionProject as `0x${string}`]
+        : undefined,
+    query: { enabled: epochValue !== null && actionProjectValid },
+  });
+
+  const { data: claimableSetFlag } = useReadContract({
+    address: coreAddresses.Treasury as `0x${string}`,
+    abi: getABI("Treasury") as Abi,
+    chainId: DEFAULT_NETWORK.chainId,
+    functionName: "claimableSet",
+    args:
+      epochValue !== null && actionProjectValid
+        ? [epochValue, actionProject as `0x${string}`]
+        : undefined,
+    query: { enabled: epochValue !== null && actionProjectValid },
+  });
+
+  const alreadyClaimed =
+    claimableSetFlag === true &&
+    typeof claimableAmount === "bigint" &&
+    claimableAmount === 0n;
+
+  const { data: currentEpochRaw } = useReadContract({
+    address: coreAddresses.SignalRegistry as `0x${string}`,
+    abi: getABI("SignalRegistry") as Abi,
+    chainId: DEFAULT_NETWORK.chainId,
+    functionName: "currentEpoch",
+  });
+  const currentEpochChain =
+    typeof currentEpochRaw === "bigint" ? currentEpochRaw : undefined;
+
+  const pendingEpoch = useMemo(() => {
+    if (currentEpochChain === undefined || currentEpochChain === 0n)
+      return null;
+    const last = currentEpochChain - 1n;
+    const finalized = epochs.some((e) => e.epoch === last.toString());
+    return finalized ? null : last;
+  }, [currentEpochChain, epochs]);
+
+  useEffect(() => {
+    if (!actionProject && projects.length === 1) {
+      setActionProject(projects[0].id);
+    }
+  }, [projects, actionProject]);
+
+  const selectEpoch = (id: string, epochNumber?: string | null) => {
+    setSelectedEpochId(id);
+    if (epochNumber) {
+      setActionEpoch(epochNumber);
+    }
+  };
+
+  const canAct = !actions.isPending;
 
   const handlers = {
     reconcileTarget: () => actions.treasury.reconcileTarget(),
     finalizeEpoch: () =>
-      epochValue && actions.treasury.finalizeEpoch(epochValue),
+      epochValue !== null && actions.treasury.finalizeEpoch(epochValue),
+    finalizePending: () =>
+      pendingEpoch !== null && actions.treasury.finalizeEpoch(pendingEpoch),
     computeClaimable: () =>
-      epochValue &&
+      epochValue !== null &&
       actionProjectValid &&
       actions.treasury.computeClaimable(
         epochValue,
         actionProject as `0x${string}`,
       ),
     sweepExpired: () =>
-      epochValue &&
+      epochValue !== null &&
       actionProjectValid &&
       actions.treasury.sweepExpired(
         epochValue,
         actionProject as `0x${string}`,
       ),
     resolveSlash: () =>
-      epochValue &&
+      epochValue !== null &&
       actionProjectValid &&
       actions.treasury.resolveSlash(
         epochValue,
         actionProject as `0x${string}`,
       ),
     finalizeProposal: () =>
-      epochValue &&
+      epochValue !== null &&
       actionProjectValid &&
       actions.slashing.finalizeProposal(
         epochValue,
         actionProject as `0x${string}`,
       ),
     resolveFailure: () =>
-      epochValue &&
+      epochValue !== null &&
       actionProjectValid &&
       actions.slashing.resolveFailure(
         epochValue,
         actionProject as `0x${string}`,
       ),
     claim: () =>
-      walletEpochValue &&
-      walletProjectValid &&
+      epochValue !== null &&
+      actionProjectValid &&
       actions.treasury.claim(
-        walletEpochValue,
-        walletProject as `0x${string}`,
+        epochValue,
+        actionProject as `0x${string}`,
       ),
     vote: () =>
-      walletEpochValue &&
+      walletEpochValue !== null &&
       walletProjectValid &&
       slashValue !== null &&
       voteAmountWei &&
@@ -167,21 +231,21 @@ export const useManagePanel = () => {
         blacklist,
       ),
     unvote: () =>
-      walletEpochValue &&
+      walletEpochValue !== null &&
       walletProjectValid &&
       actions.slashing.unvote(
         walletEpochValue,
         walletProject as `0x${string}`,
       ),
     withdrawStake: () =>
-      walletEpochValue &&
+      walletEpochValue !== null &&
       walletProjectValid &&
       actions.slashing.withdrawStake(
         walletEpochValue,
         walletProject as `0x${string}`,
       ),
     claimVoterReward: () =>
-      walletEpochValue &&
+      walletEpochValue !== null &&
       walletProjectValid &&
       actions.slashing.claimVoterReward(
         walletEpochValue,
@@ -191,27 +255,29 @@ export const useManagePanel = () => {
 
   const disabled = {
     reconcileTarget: !canAct,
-    finalizeEpoch: !canAct || !epochValue,
-    computeClaimable: !canAct || !epochValue || !actionProjectValid,
-    sweepExpired: !canAct || !epochValue || !actionProjectValid,
-    resolveSlash: !canAct || !epochValue || !actionProjectValid,
-    finalizeProposal: !canAct || !epochValue || !actionProjectValid,
-    resolveFailure: !canAct || !epochValue || !actionProjectValid,
+    finalizeEpoch: !canAct || epochValue === null,
+    finalizePending: !canAct || pendingEpoch === null,
+    computeClaimable: !canAct || epochValue === null || !actionProjectValid,
+    sweepExpired: !canAct || epochValue === null || !actionProjectValid,
+    resolveSlash: !canAct || epochValue === null || !actionProjectValid,
+    finalizeProposal: !canAct || epochValue === null || !actionProjectValid,
+    resolveFailure: !canAct || epochValue === null || !actionProjectValid,
     claim:
       !canAct ||
-      !walletEpochValue ||
-      !walletProjectValid ||
+      epochValue === null ||
+      !actionProjectValid ||
       !isClaimer ||
-      claimerLoading,
+      claimerLoading ||
+      alreadyClaimed,
     vote:
       !canAct ||
-      !walletEpochValue ||
+      walletEpochValue === null ||
       !walletProjectValid ||
       slashValue === null ||
       !voteAmountValid,
-    unvote: !canAct || !walletEpochValue || !walletProjectValid,
-    withdrawStake: !canAct || !walletEpochValue || !walletProjectValid,
-    claimVoterReward: !canAct || !walletEpochValue || !walletProjectValid,
+    unvote: !canAct || walletEpochValue === null || !walletProjectValid,
+    withdrawStake: !canAct || walletEpochValue === null || !walletProjectValid,
+    claimVoterReward: !canAct || walletEpochValue === null || !walletProjectValid,
   };
 
   return {
@@ -255,7 +321,13 @@ export const useManagePanel = () => {
     actionsError: actions.error,
     isClaimer,
     claimerLoading,
+    claimableAmount: claimableAmount as bigint | undefined,
+    alreadyClaimed,
+    currentEpochChain,
+    pendingEpoch,
+    selectEpoch,
     disabled,
     handlers,
+    busy: actions.isPending,
   };
 };
