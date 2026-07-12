@@ -13,11 +13,17 @@
     "inputs": [{ "name": "id", "type": "uint256" }],
     "outputs": [
       { "name": "identityRoot", "type": "uint256" },
-      { "name": "balanceRoot", "type": "bytes32" },
+      { "name": "poolRoot", "type": "bytes32" },
+      { "name": "bucket", "type": "uint8" },
       { "name": "start", "type": "uint64" },
       { "name": "end", "type": "uint64" },
       { "name": "exists", "type": "bool" },
       { "name": "executed", "type": "bool" },
+      { "name": "kind", "type": "uint8" },
+      { "name": "newBucket", "type": "uint8" },
+      { "name": "pmProject", "type": "address" },
+      { "name": "pmFlag", "type": "bool" },
+      { "name": "pmValue", "type": "uint256" },
       { "name": "baseBudget", "type": "uint256" },
       { "name": "perProjectBudget", "type": "uint256" },
       { "name": "newDuration", "type": "uint256" }
@@ -49,13 +55,6 @@
   },
   {
     "type": "function",
-    "name": "minBalance",
-    "stateMutability": "view",
-    "inputs": [],
-    "outputs": [{ "type": "uint128" }]
-  },
-  {
-    "type": "function",
     "name": "votingWindow",
     "stateMutability": "view",
     "inputs": [],
@@ -69,6 +68,50 @@
       { "name": "baseBudget", "type": "uint256" },
       { "name": "perProjectBudget", "type": "uint256" },
       { "name": "newDuration", "type": "uint256" }
+    ],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "proposeBucket",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "newBucket", "type": "uint8" }],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "proposeCap",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "project", "type": "address" },
+      { "name": "cap", "type": "uint256" }
+    ],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "proposeDefaultCap",
+    "stateMutability": "nonpayable",
+    "inputs": [{ "name": "cap", "type": "uint256" }],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "proposeRegister",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "project", "type": "address" },
+      { "name": "active", "type": "bool" }
+    ],
+    "outputs": [{ "type": "uint256" }]
+  },
+  {
+    "type": "function",
+    "name": "proposeBlacklist",
+    "stateMutability": "nonpayable",
+    "inputs": [
+      { "name": "project", "type": "address" },
+      { "name": "banned", "type": "bool" }
     ],
     "outputs": [{ "type": "uint256" }]
   },
@@ -89,19 +132,8 @@
           { "name": "points", "type": "uint256[8]" }
         ]
       },
-      {
-        "name": "balanceLinkProof",
-        "type": "tuple",
-        "components": [
-          { "name": "merkleTreeDepth", "type": "uint256" },
-          { "name": "merkleTreeRoot", "type": "uint256" },
-          { "name": "nullifier", "type": "uint256" },
-          { "name": "message", "type": "uint256" },
-          { "name": "scope", "type": "uint256" },
-          { "name": "points", "type": "uint256[8]" }
-        ]
-      },
-      { "name": "balanceZkProof", "type": "bytes" },
+      { "name": "poolZkProof", "type": "bytes" },
+      { "name": "poolRoot", "type": "bytes32" },
       { "name": "proposalId", "type": "uint256" }
     ],
     "outputs": []
@@ -121,6 +153,27 @@
       { "name": "baseBudget", "type": "uint256", "indexed": false },
       { "name": "perProjectBudget", "type": "uint256", "indexed": false },
       { "name": "newDuration", "type": "uint256", "indexed": false },
+      { "name": "end", "type": "uint64", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "BucketProposalCreated",
+    "inputs": [
+      { "name": "id", "type": "uint256", "indexed": true },
+      { "name": "newBucket", "type": "uint8", "indexed": false },
+      { "name": "end", "type": "uint64", "indexed": false }
+    ]
+  },
+  {
+    "type": "event",
+    "name": "PaymasterProposalCreated",
+    "inputs": [
+      { "name": "id", "type": "uint256", "indexed": true },
+      { "name": "kind", "type": "uint8", "indexed": false },
+      { "name": "project", "type": "address", "indexed": false },
+      { "name": "value", "type": "uint256", "indexed": false },
+      { "name": "flag", "type": "bool", "indexed": false },
       { "name": "end", "type": "uint64", "indexed": false }
     ]
   },
@@ -150,5 +203,6 @@
   { "type": "error", "name": "BadProof", "inputs": [] },
   { "type": "error", "name": "BadScope", "inputs": [] },
   { "type": "error", "name": "StaleRoot", "inputs": [] },
-  { "type": "error", "name": "BelowFloor", "inputs": [] }
+  { "type": "error", "name": "BelowFloor", "inputs": [] },
+  { "type": "error", "name": "BadBucket", "inputs": [] }
 ]

@@ -1,4 +1,4 @@
-import { keccak256, stringToHex, toHex } from "viem";
+import { encodeAbiParameters, keccak256, toHex } from "viem";
 import { Group, Identity, generateProof, type SemaphoreProof } from "@semaphore-protocol/core";
 import { fetchMatroidGraphQL } from "@/app/lib/graphql/fetcher";
 import { ENROLLMENTS_QUERY } from "@/app/lib/graphql/matroid";
@@ -7,10 +7,18 @@ import { hash2 } from "./poseidon";
 type RawEnroll = { commitment: string; leafIndex: number };
 type EnrollmentsResponse = { enrollments: RawEnroll[] };
 
-export const BALANCE_LINK_SCOPE = BigInt(keccak256(stringToHex("matroid.balance-link")));
-
 export const scopeHash = (scope: bigint): bigint =>
   BigInt(keccak256(toHex(scope, { size: 32 }))) >> 8n;
+
+export const councilScope = (council: `0x${string}`, proposalId: bigint): bigint =>
+  BigInt(
+    keccak256(
+      encodeAbiParameters(
+        [{ type: "address" }, { type: "uint256" }],
+        [council, proposalId],
+      ),
+    ),
+  );
 
 export const semaphoreNullifier = (
   scope: bigint,

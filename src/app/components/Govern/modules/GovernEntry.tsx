@@ -2,16 +2,15 @@
 
 import { FunctionComponent, JSX, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { formatUnits } from "viem";
+import { formatUnits, parseUnits } from "viem";
 import { formatDuration } from "@/app/lib/format/time";
 import Caja from "@/app/components/Create/modules/Caja";
 import ActionButton from "@/app/components/Common/modules/ActionButton";
 import EnrolModal from "@/app/components/Common/modules/EnrolModal";
-import { useGovernance } from "@/app/lib/hooks/useGovernance";
 import { useAnonGovernance } from "@/app/lib/hooks/useAnonGovernance";
 import { useChip } from "@/app/lib/hooks/useChip";
 import { useIdentity } from "@/app/lib/hooks/useIdentity";
-import { useBalanceTree } from "@/app/lib/hooks/useBalanceTree";
+import { usePool } from "@/app/lib/hooks/usePool";
 import { useChainClock } from "@/app/lib/hooks/useChainClock";
 
 const formatLeft = (secs: number): string => {
@@ -27,53 +26,52 @@ const formatLeft = (secs: number): string => {
 
 const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element => {
   const path = usePathname();
-  const g = useGovernance();
   const ag = useAnonGovernance();
   const chip = useChip();
   const identity = useIdentity(chip.commitment);
-  const bt = useBalanceTree();
+  const pool = usePool();
+  const [poolDeposited, setPoolDeposited] = useState<boolean>(false);
   const nowSec = useChainClock();
 
-  const [mode, setMode] = useState<"public" | "anonymous">("public");
   const [base, setBase] = useState<string>("");
   const [per, setPer] = useState<string>("");
   const [dur, setDur] = useState<string>("");
-  const [amt, setAmt] = useState<{ [k: number]: string }>({});
   const [confirm, setConfirm] = useState<{ id: number; choice: 0 | 1 } | null>(
     null,
   );
   const [enrolOpen, setEnrolOpen] = useState<boolean>(false);
+  const [bucketSel, setBucketSel] = useState<number>(0);
+  const [pmProject, setPmProject] = useState<string>("");
+  const [pmCap, setPmCap] = useState<string>("");
+  const [propType, setPropType] = useState<"budget" | "bucket" | "cap" | "blacklist">("budget");
 
-  const anon = mode === "anonymous";
+  const isAddr = (a: string): boolean => /^0x[0-9a-fA-F]{40}$/.test(a);
 
   const isNum = (v: string): boolean =>
     v.trim() !== "" && !isNaN(Number(v)) && Number(v) >= 0;
   const canPropose = isNum(base) && isNum(per);
-  const canPublicVote = (id: number): boolean =>
-    isNum(amt[id] ?? "") && Number(amt[id]) > 0;
 
   useEffect(() => {
     if (chip.connected) ag.loadMyVotes();
   }, [chip.connected]);
 
-  const seg = (active: boolean): string =>
-    `relative flex px-4 py-1 border-2 border-black cursor-pointer text-xs font-digiB uppercase tracking-[0.12em] ${
-      active ? "bg-yell text-black" : "bg-dullY text-black/50"
-    }`;
+  useEffect(() => {
+    if (chip.connected && identity.enrolled) {
+      pool.hasDeposit().then(setPoolDeposited);
+    }
+  }, [chip.connected, identity.enrolled, pool.activeBucket, pool.isPending]);
 
   const input =
     "relative w-full flex border-2 border-black bg-white/80 px-2 py-1 text-sm text-black font-earl focus:outline-none";
 
-  const needsEnrol = anon && !identity.enrolled;
+  const needsEnrol = !identity.enrolled;
 
   const doPropose = async (): Promise<void> => {
     if (needsEnrol) {
       setEnrolOpen(true);
       return;
     }
-    const ok = anon
-      ? await ag.propose(base, per, dur)
-      : await g.propose(base, per, dur);
+    const ok = await ag.propose(base, per, dur);
     if (ok) {
       setBase("");
       setPer("");
@@ -89,11 +87,6 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
     setConfirm({ id, choice });
   };
 
-  const publicVote = async (id: number, inFavor: boolean): Promise<void> => {
-    const ok = await g.vote(BigInt(id), inFavor, amt[id] ?? "");
-    if (ok) setAmt((prev) => ({ ...prev, [id]: "" }));
-  };
-
   return (
     <Caja title={`*${dict?.govern}*`}>
       <div
@@ -101,27 +94,10 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
         dir={path.includes("/ar") ? "rtl" : "ltr"}
       >
         <div className="relative w-full flex flex-col gap-2">
-          <span className="relative flex text-[10px] uppercase tracking-[0.2em] opacity-60">
-            {dict?.visibility}
-          </span>
-          <div className="relative w-full flex flex-row gap-2">
-            <button onClick={() => setMode("public")} className={seg(!anon)}>
-              {dict?.visibilityPublic}
-            </button>
-            <button
-              onClick={() => {
-                setMode("anonymous");
-                if (!identity.enrolled) setEnrolOpen(true);
-              }}
-              className={seg(anon)}
-            >
-              {dict?.visibilityAnonymous}
-            </button>
-          </div>
           <span className="relative flex text-[10px] leading-relaxed opacity-70">
-            {anon ? dict?.anonHint : dict?.publicHint}
+            {dict?.anonHint}
           </span>
-          {anon && !identity.enrolled ? (
+          {!identity.enrolled ? (
             <div className="relative w-full flex flex-col gap-1 border-2 border-black bg-yell p-2">
               <span className="relative flex text-[11px] font-digiB uppercase">
                 {dict?.enrolNeeded}
@@ -133,71 +109,212 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
                 onClick={() => setEnrolOpen(true)}
               />
             </div>
-          ) : anon ? (
+          ) : (
             <div className="relative w-full flex flex-col gap-2 border-2 border-black bg-white/60 p-2">
               <span className="relative flex text-[11px] text-green-700">
                 ✓ {dict?.enrolDone}
               </span>
-              <span className="relative flex text-[10px] leading-relaxed opacity-70">
-                {dict?.enrolBalanceInfo}
-              </span>
-              <ActionButton
-                size="sm"
-                showIcon={false}
-                label={dict?.registerBalance}
-                disabled={!bt.ready}
-                loading={bt.isPending}
-                onClick={bt.register}
-              />
             </div>
-          ) : null}
+          )}
         </div>
 
         <div className="relative w-full flex flex-col gap-2 border-2 border-black bg-white/60 p-3">
           <span className="relative flex font-digiB uppercase text-sm">
             {dict?.propose}
           </span>
-          <input
-            value={base}
-            onChange={(e) => setBase(e.target.value)}
-            placeholder={dict?.baseBudgetPlaceholder}
-            className={input}
-          />
-          <input
-            value={per}
-            onChange={(e) => setPer(e.target.value)}
-            placeholder={dict?.perProjectBudgetPlaceholder}
-            className={input}
-          />
-          <input
-            value={dur}
-            onChange={(e) => setDur(e.target.value)}
-            placeholder={dict?.newDurationPlaceholder}
-            className={input}
-          />
-          <ActionButton
-            size="sm"
-            label={dict?.propose}
-            disabled={
-              !canPropose || (anon ? !ag.ready || needsEnrol : !g.ready)
-            }
-            loading={anon ? ag.isPending : g.isPending}
-            onClick={doPropose}
-          />
+
+          {!needsEnrol && (
+            <div className="relative w-full flex flex-col gap-1">
+              <span className="relative flex text-[10px] uppercase tracking-[0.2em] opacity-60">
+                {dict?.propType}
+              </span>
+              <div className="relative w-full flex flex-row gap-1 flex-wrap">
+                {(
+                  [
+                    ["budget", dict?.propTypeBudget],
+                    ["bucket", dict?.propTypeBucket],
+                    ["cap", dict?.propTypeCap],
+                    ["blacklist", dict?.propTypeBlacklist],
+                  ] as const
+                ).map(([k, lbl]) => (
+                  <button
+                    key={k}
+                    onClick={() => setPropType(k)}
+                    className={`relative flex px-2 py-1 border-2 border-black text-[10px] font-digiB uppercase ${
+                      propType === k ? "bg-yell text-black" : "bg-dullY text-black/50"
+                    }`}
+                  >
+                    {lbl}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {propType === "budget" && (
+            <>
+              <input
+                value={base}
+                onChange={(e) => setBase(e.target.value)}
+                placeholder={dict?.baseBudgetPlaceholder}
+                className={input}
+              />
+              <input
+                value={per}
+                onChange={(e) => setPer(e.target.value)}
+                placeholder={dict?.perProjectBudgetPlaceholder}
+                className={input}
+              />
+              <input
+                value={dur}
+                onChange={(e) => setDur(e.target.value)}
+                placeholder={dict?.newDurationPlaceholder}
+                className={input}
+              />
+              <ActionButton
+                size="sm"
+                label={dict?.propose}
+                disabled={!canPropose || !ag.ready || needsEnrol}
+                loading={ag.isPending}
+                onClick={doPropose}
+              />
+            </>
+          )}
+
+          {propType === "bucket" && (
+            <>
+              <span className="relative flex text-[10px] leading-relaxed opacity-70">
+                {dict?.bucketNote}
+              </span>
+              <select
+                value={bucketSel}
+                onChange={(e) => setBucketSel(Number(e.target.value))}
+                className={input}
+              >
+                {Array.from({ length: 9 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {i} · {["0.01", "0.1", "0.25", "0.5", "0.75", "1", "5", "7", "10"][i]} MONA
+                  </option>
+                ))}
+              </select>
+              <ActionButton
+                size="sm"
+                label={dict?.propose}
+                disabled={!ag.ready}
+                loading={ag.isPending}
+                onClick={() => ag.proposeBucket(bucketSel)}
+              />
+            </>
+          )}
+
+          {propType === "cap" && (
+            <>
+              <span className="relative flex text-[10px] leading-relaxed opacity-70">
+                {dict?.capNote}
+              </span>
+              <input
+                value={pmProject}
+                onChange={(e) => setPmProject(e.target.value)}
+                placeholder={dict?.capProjectPlaceholder}
+                className={input}
+              />
+              <input
+                value={pmCap}
+                onChange={(e) => setPmCap(e.target.value)}
+                placeholder={dict?.capValuePlaceholder}
+                className={input}
+              />
+              <ActionButton
+                size="sm"
+                label={dict?.propose}
+                disabled={!ag.ready || !isAddr(pmProject) || !isNum(pmCap)}
+                loading={ag.isPending}
+                onClick={() =>
+                  ag.proposeCap(pmProject as `0x${string}`, parseUnits(pmCap, 18))
+                }
+              />
+            </>
+          )}
+
+          {propType === "blacklist" && (
+            <>
+              <span className="relative flex text-[10px] leading-relaxed opacity-70">
+                {dict?.blacklistNote}
+              </span>
+              <input
+                value={pmProject}
+                onChange={(e) => setPmProject(e.target.value)}
+                placeholder={dict?.capProjectPlaceholder}
+                className={input}
+              />
+              <div className="relative w-full flex flex-row gap-2 flex-wrap">
+                <ActionButton
+                  size="sm"
+                  label={dict?.blacklistBtn}
+                  disabled={!ag.ready || !isAddr(pmProject)}
+                  loading={ag.isPending}
+                  onClick={() => ag.proposeBlacklist(pmProject as `0x${string}`, true)}
+                />
+                <ActionButton
+                  size="sm"
+                  label={dict?.unblacklistBtn}
+                  disabled={!ag.ready || !isAddr(pmProject)}
+                  loading={ag.isPending}
+                  onClick={() => ag.proposeBlacklist(pmProject as `0x${string}`, false)}
+                />
+              </div>
+            </>
+          )}
         </div>
+
+        {!needsEnrol ? (
+          <div className="relative w-full flex flex-col gap-2 border-2 border-black bg-white/60 p-3">
+            <span className="relative flex font-digiB uppercase text-sm">
+              {dict?.poolTitle}
+            </span>
+            {poolDeposited ? (
+              <>
+                <span className="relative flex text-[10px] text-green-700">
+                  ✓ {dict?.poolDeposited}
+                </span>
+                <ActionButton
+                  size="sm"
+                  showIcon={false}
+                  label={dict?.poolWithdraw}
+                  disabled={!pool.ready}
+                  loading={pool.isPending}
+                  onClick={pool.withdraw}
+                />
+              </>
+            ) : (
+              <>
+                <span className="relative flex text-[10px] leading-relaxed opacity-70">
+                  {dict?.poolInfo}
+                </span>
+                {pool.denomination > 0n && (
+                  <span className="relative flex text-[10px] opacity-70">
+                    {dict?.poolDenomination}:{" "}
+                    {Number(formatUnits(pool.denomination, 18)).toLocaleString()} MONA
+                  </span>
+                )}
+                <ActionButton
+                  size="sm"
+                  showIcon={false}
+                  label={dict?.poolDeposit}
+                  disabled={!pool.ready}
+                  loading={pool.isPending}
+                  onClick={pool.deposit}
+                />
+              </>
+            )}
+          </div>
+        ) : null}
 
         <div className="relative w-full flex flex-col gap-2">
           <span className="relative flex font-digiB uppercase text-sm">
-            {dict?.visibilityAnonymous} · {dict?.proposals} ({ag.count})
+            {dict?.proposals} ({ag.count})
           </span>
           {renderAnon()}
-        </div>
-
-        <div className="relative w-full flex flex-col gap-2">
-          <span className="relative flex font-digiB uppercase text-sm">
-            {dict?.visibilityPublic} · {dict?.proposals} ({g.count})
-          </span>
-          {renderPublic()}
         </div>
       </div>
 
@@ -215,92 +332,6 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
         {dict?.noProposals}
       </span>
     );
-  }
-
-  function loadingRow(): JSX.Element {
-    return (
-      <span className="relative flex text-xs opacity-60">
-        {dict?.loadingProposals}
-      </span>
-    );
-  }
-
-  function renderPublic(): JSX.Element | JSX.Element[] {
-    if (g.count === 0) return emptyRow();
-    if (!g.proposals.length) return loadingRow();
-    return g.proposals.map((row) => {
-      const d = row.data as readonly bigint[] | undefined;
-      if (!d)
-        return (
-          <div
-            key={row.id}
-            className="relative w-full flex flex-row gap-2 border-2 border-black bg-white/60 p-2 text-xs opacity-60"
-          >
-            <span>#{row.id}</span>
-            <span>{dict?.loadingProposals}</span>
-          </div>
-        );
-      const executed = d[6] as unknown as boolean;
-      return (
-        <div
-          key={row.id}
-          className="relative w-full flex flex-col gap-1 border-2 border-black bg-white/60 p-2 text-xs"
-        >
-          <div className="relative flex flex-row gap-2">
-            <span className="opacity-60">#{row.id}</span>
-            <span>{executed ? dict?.executed : dict?.open}</span>
-          </div>
-          <div className="relative flex">
-            {dict?.baseLabel} {formatUnits(d[0], 18)} MONA ·{" "}
-            {dict?.perProjectLabel} {formatUnits(d[1], 18)} MONA
-          </div>
-          <div className="relative flex">
-            {dict?.yesLabel} {formatUnits(d[4], 18)} · {dict?.noLabel}{" "}
-            {formatUnits(d[5], 18)}
-          </div>
-          <div className="relative flex flex-row flex-wrap gap-2 items-center">
-            <input
-              value={amt[row.id] ?? ""}
-              onChange={(e) => setAmt({ ...amt, [row.id]: e.target.value })}
-              placeholder={dict?.votePlaceholder}
-              className="relative flex w-24 border-2 border-black bg-white/80 px-2 py-0.5 text-black"
-            />
-            <ActionButton
-              size="sm"
-              showIcon={false}
-              label={dict?.voteFor}
-              disabled={!g.ready || !canPublicVote(row.id)}
-              loading={g.isPending}
-              onClick={() => publicVote(row.id, true)}
-            />
-            <ActionButton
-              size="sm"
-              showIcon={false}
-              label={dict?.voteAgainst}
-              disabled={!g.ready || !canPublicVote(row.id)}
-              loading={g.isPending}
-              onClick={() => publicVote(row.id, false)}
-            />
-            <ActionButton
-              size="sm"
-              showIcon={false}
-              label={dict?.execute}
-              disabled={!g.ready}
-              loading={g.isPending}
-              onClick={() => g.execute(BigInt(row.id))}
-            />
-            <ActionButton
-              size="sm"
-              showIcon={false}
-              label={dict?.withdraw}
-              disabled={!g.ready}
-              loading={g.isPending}
-              onClick={() => g.withdraw(BigInt(row.id))}
-            />
-          </div>
-        </div>
-      );
-    });
   }
 
   function renderAnon(): JSX.Element | JSX.Element[] {
@@ -323,12 +354,16 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
             <span>{dict?.loadingProposals}</span>
           </div>
         );
-      const baseBudget = d[6] as bigint;
-      const perBudget = d[7] as bigint;
-      const newDur = d[8] as bigint;
-      const executed = d[5] as boolean;
-      const start = Number(d[2] as bigint);
-      const end = Number(d[3] as bigint);
+      const kind = Number(d[7] as number | bigint);
+      const newBucket = Number(d[8] as number | bigint);
+      const pmProject = d[9] as string;
+      const pmFlag = d[10] as boolean;
+      const pmValue = d[11] as bigint;
+      const baseBudget = d[12] as bigint;
+      const perBudget = d[13] as bigint;
+      const newDur = d[14] as bigint;
+      const executed = d[6] as boolean;
+      const end = Number(d[4] as bigint);
       const openNow = !executed && nowSec < end;
       const myVote = ag.myVotes[row.id];
       const t = ag.tallies[row.id] ?? { yes: 0n, no: 0n };
@@ -352,14 +387,40 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
               </span>
             ) : null}
           </div>
-          <div className="relative flex">
-            {dict?.baseLabel} {formatUnits(baseBudget, 18)} MONA ·{" "}
-            {dict?.perProjectLabel} {formatUnits(perBudget, 18)} MONA
-          </div>
-          <div className="relative flex">
-            {dict?.newDurationLabel}{" "}
-            {newDur > 0n ? formatDuration(newDur.toString()) : dict?.unchanged}
-          </div>
+          {kind === 0 ? (
+            <>
+              <div className="relative flex">
+                {dict?.baseLabel} {formatUnits(baseBudget, 18)} MONA ·{" "}
+                {dict?.perProjectLabel} {formatUnits(perBudget, 18)} MONA
+              </div>
+              <div className="relative flex">
+                {dict?.newDurationLabel}{" "}
+                {newDur > 0n ? formatDuration(newDur.toString()) : dict?.unchanged}
+              </div>
+            </>
+          ) : kind === 1 ? (
+            <div className="relative flex">
+              {dict?.kindBucket}: {newBucket}
+            </div>
+          ) : kind === 2 ? (
+            <div className="relative flex break-all">
+              {dict?.kindPmCap}: {pmProject} → {formatUnits(pmValue, 18)} ETH
+            </div>
+          ) : kind === 3 ? (
+            <div className="relative flex">
+              {dict?.kindPmDefaultCap}: {formatUnits(pmValue, 18)} ETH
+            </div>
+          ) : kind === 4 ? (
+            <div className="relative flex break-all">
+              {dict?.kindPmRegister}: {pmProject} →{" "}
+              {pmFlag ? dict?.pmOn : dict?.pmOff}
+            </div>
+          ) : (
+            <div className="relative flex break-all">
+              {dict?.kindPmBlacklist}: {pmProject} →{" "}
+              {pmFlag ? dict?.pmBanned : dict?.pmUnbanned}
+            </div>
+          )}
           <div className="relative flex opacity-70">
             {dict?.yesLabel} {t.yes.toString()} · {dict?.noLabel}{" "}
             {t.no.toString()}

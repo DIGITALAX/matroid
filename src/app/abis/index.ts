@@ -6,10 +6,9 @@ import SignalScorer from "./SignalScorer.json";
 import GlobalStakingPool from "./GlobalStakingPool.json";
 import Treasury from "./Treasury.json";
 import SlashingCouncil from "./SlashingCouncil.json";
-import MatroidGovernance from "./MatroidGovernance.json";
 import MatroidAnonGovernance from "./MatroidAnonGovernance.json";
 import IdentityRegistry from "./IdentityRegistry.json";
-import MonaBalanceTree from "./MonaBalanceTree.json";
+import BalancePool from "./BalancePool.json";
 
 export const ABIS = {
   Mona,
@@ -20,10 +19,9 @@ export const ABIS = {
   GlobalStakingPool,
   Treasury,
   SlashingCouncil,
-  MatroidGovernance,
   MatroidAnonGovernance,
   IdentityRegistry,
-  MonaBalanceTree,
+  BalancePool,
 } as const;
 
 export const getABI = (contractName: keyof typeof ABIS) => {

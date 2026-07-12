@@ -1,12 +1,12 @@
 "use client";
 
-import { FunctionComponent, JSX } from "react";
+import { FunctionComponent, JSX, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import Frame from "@/app/components/Create/modules/Frame";
 import ActionButton from "./ActionButton";
 import { useChip } from "@/app/lib/hooks/useChip";
 import { useIdentity } from "@/app/lib/hooks/useIdentity";
-import { useBalanceTree } from "@/app/lib/hooks/useBalanceTree";
+import { usePool } from "@/app/lib/hooks/usePool";
 
 const EnrolModal: FunctionComponent<{
   dict: any;
@@ -16,7 +16,14 @@ const EnrolModal: FunctionComponent<{
   const path = usePathname();
   const chip = useChip();
   const identity = useIdentity(chip.commitment);
-  const bt = useBalanceTree();
+  const pool = usePool();
+  const [deposited, setDeposited] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (open && chip.connected && identity.enrolled) {
+      pool.hasDeposit().then(setDeposited);
+    }
+  }, [open, chip.connected, identity.enrolled, pool.activeBucket, pool.isPending]);
 
   if (!open) return null;
 
@@ -63,7 +70,7 @@ const EnrolModal: FunctionComponent<{
             <div className="relative w-full flex flex-col gap-3 border-2 border-black bg-white/60 p-3">
               {step("1", dict?.enrolStepConnect, chip.connected)}
               {step("2", dict?.enrolStepEnrol, identity.enrolled)}
-              {step("3", dict?.enrolStepBalance, false)}
+              {step("3", dict?.enrolStepBalance, deposited)}
             </div>
 
             {!chip.connected ? (
@@ -93,17 +100,28 @@ const EnrolModal: FunctionComponent<{
                 <span className="relative flex text-[10px] text-green-700">
                   ✓ {dict?.chipEnrolled}
                 </span>
-                <span className="relative flex text-[10px] leading-relaxed opacity-70">
-                  {dict?.enrolBalanceInfo}
-                </span>
-                <ActionButton
-                  size="sm"
-                  showIcon={false}
-                  label={dict?.registerBalance}
-                  disabled={!bt.ready}
-                  loading={bt.isPending}
-                  onClick={bt.register}
-                />
+                {deposited ? (
+                  <span className="relative flex text-[10px] text-green-700">
+                    ✓ {dict?.poolDeposited}
+                  </span>
+                ) : (
+                  <>
+                    <span className="relative flex text-[10px] leading-relaxed opacity-70">
+                      {dict?.poolInfo}
+                    </span>
+                    <ActionButton
+                      size="sm"
+                      showIcon={false}
+                      label={dict?.poolDeposit}
+                      disabled={!pool.ready}
+                      loading={pool.isPending}
+                      onClick={async () => {
+                        await pool.deposit();
+                        pool.hasDeposit().then(setDeposited);
+                      }}
+                    />
+                  </>
+                )}
               </div>
             )}
 

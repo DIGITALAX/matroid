@@ -37,7 +37,11 @@ export const useTx = () => {
     try {
       const hash = await fn();
       context?.setTxModal({ open: true, status: "pending", label, hash });
-      await waitForTransactionReceipt(config, { hash });
+      const receipt = await waitForTransactionReceipt(config, { hash });
+      if (receipt.status === "reverted") {
+        context?.setTxModal({ open: true, status: "error", label, hash, message: "reverted" });
+        return false;
+      }
       context?.setTxModal({ open: true, status: "success", label, hash });
       return true;
     } catch (err: any) {
@@ -62,10 +66,14 @@ export const useTx = () => {
     try {
       const hash = await fn();
       context?.setTxModal({ open: true, status: "pending", label, hash });
-      await waitForTransactionReceipt(config, {
+      const receipt = await waitForTransactionReceipt(config, {
         hash,
         chainId: DEFAULT_NETWORK.chainId as never,
       });
+      if (receipt.status === "reverted") {
+        context?.setTxModal({ open: true, status: "error", label, hash, message: "reverted" });
+        return false;
+      }
       context?.setTxModal({ open: true, status: "success", label, hash });
       return true;
     } catch (err: any) {

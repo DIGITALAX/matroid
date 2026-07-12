@@ -75,7 +75,7 @@ that anonymity still costs gas, and someone has to cover it. a sponsor deposits 
 
 this is a different role from a staker. a staker locks MONA against a project's activity and score, and can unstake. a sponsor funds anonymity itself, and the relationship is one-way by design.
 
-anonymous governance follows the same shape. MatroidGovernance is the public path: lock MONA, vote with that stake as weight, your wallet is the record. MatroidAnonGovernance is a parallel, separate path for the same budget proposals — same treasury, same effect on execution — but the vote proves two things in zero knowledge instead of revealing a wallet: that the voter holds an enrolled identity (the chip, via IdentityRegistry), and that the voter holds at least a minimum MONA balance (via MonaBalanceTree), each consumed with a one-time nullifier so no one can vote twice on the same proposal. the public and anonymous paths do not merge into one tally — they are two independent ways to reach the same Treasury, coexisting without either one being able to break the other.
+governance is anonymous. MatroidAnonGovernance is the only governance contract: the vote proves two things in zero knowledge instead of revealing a wallet — that the voter holds an enrolled identity (the chip, via IdentityRegistry), and that the voter holds a MONA deposit in the shielded BalancePool (a fixed-denomination commitment pool: deposit once from a wallet, vote forever without one). the vote emits a per-proposal nullifier derived from the chip secret, so no one can vote twice on the same proposal and no two votes are linkable to each other or to any wallet. eligibility is bucketed: the pool has nine fixed deposit sizes (0.01 to 10 MONA) and one active bucket at a time, itself changeable only by vote. beyond budgets, MatroidAnonGovernance also governs the paymaster (the gas sponsor): proposals can set per-project gas caps, change the default cap, register or block a project from sponsored gas — so if a project abuses the shared fuel, the anonymous voters can throttle or cut it, with no admin anywhere. it is the single address wired into the Treasury's budget controls.
 
 # Race Condition
 
@@ -224,8 +224,7 @@ function score(address project, uint256 epoch) external view returns (uint256)
 - `address public owner` - treasury owner
 - `GlobalStakingPool public globalPool` - global pool reference
 - `address public slashingContract` - slashing council address
-- `address public governance` - public budget-governance address (set-once)
-- `address public anonGovernance` - anonymous (ZK) budget-governance address (set-once); additive, parallel to `governance` — either may call `setBudgets`/`extendDuration`
+- `address public anonGovernance` - anonymous (ZK) budget-governance address (set-once); the only address allowed to call `setBudgets`/`extendDuration`
 - `uint256 public immutable claimWindow` - claim expiry period (e.g., 2419200 = 4 weeks)
 - `uint256 public targetTotal` - target total distribution amount
 - `uint256 public targetDuration` - target distribution period
@@ -250,9 +249,8 @@ function score(address project, uint256 epoch) external view returns (uint256)
 **Budget Management**:
 - `deposit(uint256 amount)` - anyone can deposit MONA, increases `targetTotal` (the only way `targetTotal` grows)
 - `reconcileTarget()` - anyone, sets `targetTotal = max(targetTotal, balance + distributed)`
-- `setBudgets(uint256 baseBudget, uint256 perProjectBudget)` - callable by `governance` OR `anonGovernance` (`onlyAnyGovernance`); set via a passed vote in MatroidGovernance (public) or MatroidAnonGovernance (anonymous, ZK)
-- `setGovernance(address)` - owner only, set-once (wires MatroidGovernance)
-- `setAnonGovernance(address)` - owner only, set-once (wires MatroidAnonGovernance); additive — does not replace or require `governance`
+- `setBudgets(uint256 baseBudget, uint256 perProjectBudget)` - callable only by `anonGovernance` (`onlyAnyGovernance`); set via a passed vote in MatroidAnonGovernance (anonymous, ZK)
+- `setAnonGovernance(address)` - owner only, set-once (wires MatroidAnonGovernance)
 - `setSlashingContract(address)` - owner only, set-once
 - `renounceOwnership()` - owner only, requires governance already set; afterwards no owner remains
 - `extendDuration(uint256 newDuration)` - governance only; can ONLY increase `targetDuration` (reverts if `newDuration <= targetDuration`), with the deploy value (~4 years) as the floor. The schedule lengthens but never shortens (no rug). `targetTotal` grows only via permissionless `deposit`. There is no way to shorten the schedule or reduce the target.
@@ -312,7 +310,7 @@ function claim(uint256 epoch, address project) external nonReentrant {
 - `EpochFinalized(uint256 indexed epoch, uint256 totalScore, uint256 activeProjects, uint256 budget)`
 - `ClaimableSet`, `ClaimableCleared`, `Claimed(uint256 indexed epoch, address indexed project, address indexed claimer, uint256 amount)`
 - `SlashingContractUpdated`, `ProjectSlashed`, `SlashRewardNotified`, `SlashResolved`
-- `GovernanceSet(address indexed governance)`, `AnonGovernanceSet(address indexed anonGovernance)`
+- `AnonGovernanceSet(address indexed anonGovernance)`
 
 #### 5. StakingFactory.sol
 **Purpose**: Deterministic deployment of project-specific staking pools.
@@ -574,21 +572,7 @@ function withdrawStake(uint256 epoch, address project) external nonReentrant {
 - `ProposalResolved(uint256 indexed epoch, address indexed project, bool passed)`
 - `VoterRewardNotified`, `VoterRewarded`
 
-#### 10. MatroidGovernance.sol
-**Purpose**: Community governance of the Treasury's per-epoch budgets by MONA holders. Lock-to-vote, linear weight (Sybil-proof: splitting gives no advantage), per-proposal (no epochs).
-
-**State**: `mona`, `treasury`; immutable `votingWindow` / `minProposeStake` / `quorumBps` / `thresholdBps`; `proposals`, `lockedStake`, `support`, `hasVoted`.
-
-**Functions**:
-- `propose(uint256 baseBudget, uint256 perProjectBudget, uint256 newTargetDuration)` - anyone; locks `minProposeStake` (counts as a YES), opens a voting window. `newTargetDuration = 0` = budgets-only; if `> 0`, a passing vote also calls `treasury.extendDuration` (only lengthens, never shortens)
-- `vote(uint256 id, bool inFavor, uint256 amount)` - lock MONA to vote; weight = amount (linear)
-- `cancelVote(uint256 id)` - during the window, withdraw your vote and stake (free exit)
-- `execute(uint256 id)` - after the window; passes if `yes+no >= quorum` (quorum = `quorumBps` of MONA total supply) AND `yes/(yes+no) >= thresholdBps`; on pass calls `treasury.setBudgets(...)` inside try/catch so a reverting setter cannot brick the proposal
-- `withdraw(uint256 id)` - reclaim locked MONA after the window
-
-**Notes**: Its own parameters are immutable (no meta-governance backdoor). It governs `setBudgets` and `extendDuration` (the latter only lengthens the distribution schedule, never shortens — safe). `targetTotal` is not directly votable (it grows only via permissionless `deposit`).
-
-#### 11. SponsorVault.sol
+#### 10. SponsorVault.sol
 **Purpose**: MasterChef-style ETH-funded gas pool. Sponsors deposit ETH (one-way, not staked, not withdrawable) and earn MONA rewards proportional to their share of total points, fed by `notifyReward` calls from elsewhere in the system (e.g. a product-sale slice on dx.computer's PrefabMarket).
 
 **State Variables**:
@@ -611,31 +595,35 @@ function withdrawStake(uint256 epoch, address project) external nonReentrant {
 
 **Note**: deliberately has no relationship to staking, governance, or the Treasury's epoch/score system — it is a standalone, one-way funding role (see "Sponsor & Anonymous Governance" above).
 
-#### 12. MatroidAnonGovernance.sol
-**Purpose**: Anonymous, zero-knowledge parallel to MatroidGovernance for the same Treasury budget proposals. Same effect (`setBudgets` / `extendDuration`), different voting mechanism — proves identity + balance instead of revealing a wallet. Additive: does not replace MatroidGovernance, both call into Treasury via `onlyAnyGovernance`.
+#### 11. MatroidAnonGovernance.sol
+**Purpose**: The sole governance contract. Anonymous, zero-knowledge voting over: Treasury budget proposals, the BalancePool active bucket, and the MatroidPaymaster (gas caps / registration / blocking). Proves identity + a shielded pool deposit instead of revealing a wallet. The only address wired into `Treasury.setBudgets`/`extendDuration` (via `onlyAnyGovernance`).
+
+**Proposal Kinds**: `Budget`, `Bucket`, `PmCap`, `PmDefaultCap`, `PmRegister`, `PmBlacklist`
 
 **State Variables**:
 - `IVerifier public immutable votingVerifier` - ZK proof verifier (shared `voting` circuit)
-- `IRootSource public immutable identity` - IdentityRegistry (chip-enrollment Merkle root)
-- `IRootSource public immutable snapshots` - MonaBalanceTree (MONA-balance Merkle root)
+- `ISemaphore public immutable semaphore`, `uint256 public immutable groupId` - chip-identity group (Semaphore, fed by IdentityRegistry enrollments)
+- `IBalancePool public immutable pool` - matroid's own shielded deposit pool (eligibility source)
 - `ITreasuryGovernance public immutable treasury` - Treasury reference (calls `setBudgets`/`extendDuration`)
-- `uint128 public immutable minBalance` - minimum MONA balance required to vote
+- `IPaymasterGovernance public immutable paymaster` - MatroidPaymaster reference (governance was irrevocably transferred to this contract at deploy)
 - `uint64 public immutable votingWindow` - voting period per proposal
-- `uint256 public immutable quorumFloor`, `uint256 public quorum` - pass threshold (raw yes-vote count, not bps of supply — anonymous voters are not enumerable the way public stake is)
-- `mapping(uint256 => Proposal) public proposals` - `identityRoot`, `balanceRoot`, `start`, `end`, `exists`, `executed`, `baseBudget`, `perProjectBudget`, `newDuration` (roots are snapshotted at proposal creation so later enrollments/registrations can't retroactively change who could have voted)
-- `mapping(uint256 => mapping(bytes32 => bool)) public usedNullifier` - one vote per identity per proposal
-- `mapping(uint256 => mapping(uint8 => uint256)) public tally` - `[proposalId][choice]` vote counts
+- `uint256 public immutable quorumFloor`, `uint256 public quorum` - pass threshold (raw yes-vote count, not bps of supply — anonymous voters are not enumerable)
+- `mapping(uint256 => Proposal) public proposals` - `identityRoot`, `poolRoot`, `bucket`, `start`, `end`, `exists`, `executed`, `kind`, `newBucket`, `pmProject`, `pmFlag`, `pmValue`, `baseBudget`, `perProjectBudget`, `newDuration` (identity + pool roots are snapshotted at proposal creation so later enrollments/deposits can't retroactively change who could have voted)
+- `mapping(uint256 => mapping(uint8 => uint256)) public tally` - `[proposalId][choice]` vote counts (double-vote prevention lives in the Semaphore per-proposal nullifier)
 
-**Key Functions**:
-- `propose(uint256 baseBudget, uint256 perProjectBudget, uint256 newDuration) returns (uint256 id)` - permissionless; snapshots current identity/balance roots, opens the voting window
-- `vote(bytes proof, uint256 proposalId, uint8 choice, bytes32 nullifier)` - verifies a 6-input ZK proof (identityRoot, proposalId, choice, balanceRoot, minBalance, nullifier) against the `voting` circuit; reverts `AlreadyVoted` if the nullifier was used; increments `tally[proposalId][choice]`
-- `execute(uint256 proposalId)` - after the window; passes if `yes >= quorum && yes > no`; on pass, calls `treasury.setBudgets(...)` (try/catch) and `treasury.extendDuration(...)` if `newDuration > 0`
+**Key Functions** (all permissionless; each snapshots current identity/pool roots and opens the voting window):
+- `propose(uint256 baseBudget, uint256 perProjectBudget, uint256 newDuration) returns (uint256 id)` - Budget proposal
+- `proposeBucket(uint8 newBucket)` - change the pool's active deposit bucket
+- `proposeCap(address project, uint256 cap)` / `proposeDefaultCap(uint256 cap)` - per-project / default paymaster gas cap per epoch
+- `proposeRegister(address project, bool active)` / `proposeBlacklist(address project, bool banned)` - grant or cut a project's sponsored gas
+- `vote(ISemaphore.SemaphoreProof voteProof, bytes poolZkProof, uint256 proposalId)` - `voteProof` is a Semaphore membership proof scoped to the proposalId (message = choice, nullifier = per-proposal, unlinkable across proposals); `poolZkProof` is a `voting`-circuit Honk proof with public inputs `[poolRoot, scopeHash(proposalId), nullifier]` proving a commitment `poseidon(identitySecret, r)` is in the snapshotted pool tree and that its nullifier equals the Semaphore one — binding "has a deposit" to "is the enrolled voter" with nothing constant revealed
+- `execute(uint256 proposalId)` - after the window; passes if `yes >= quorum && yes > no`; dispatches per kind to treasury / pool / paymaster (try/catch)
 
-**Events**: `ProposalCreated(id, baseBudget, perProjectBudget, newDuration, end)`, `Voted(id, choice, nullifier)`, `Executed(id, passed, applied)`
+**Events**: `ProposalCreated(id, baseBudget, perProjectBudget, newDuration, end)`, `BucketProposalCreated(id, newBucket, end)`, `PaymasterProposalCreated(id, kind, project, value, flag, end)`, `Voted(id, choice, nullifier)`, `Executed(id, passed, applied)`
 
-**Errors**: `NoProposal()`, `VotingClosed()`, `VotingOpen()`, `InvalidChoice()`, `AlreadyVoted()`, `AlreadyExecuted()`, `BadProof()`, `BelowFloor()`
+**Errors**: `NoProposal()`, `VotingClosed()`, `VotingOpen()`, `InvalidChoice()`, `AlreadyExecuted()`, `BadProof()`, `BadScope()`, `StaleRoot()`, `BelowFloor()`, `BadBucket()`, `ZeroAddress()`
 
-**Note**: shares its identity/balance proving infrastructure (IdentityRegistry, MonaBalanceTree, the `voting` Noir circuit) with dx.computer's DxCouncil (dx.app-only governance — wallet bans + quorum + voting window) and matroid's SponsorCouncil (paymaster governance — project fuel blacklist/cap + quorum) — same chip, same MONA-balance commitment, reusable across any project that wants anonymous, eligibility-gated voting.
+**Note**: shares the chip-identity infrastructure (IdentityRegistry/Semaphore, the `voting` Noir circuit) with dx.computer's DxCouncil — but each app has its OWN BalancePool (separate deposits, separate bucket governance). The vote's Semaphore scope is `keccak256(address(this), proposalId)`, unique per council, so a voter's nullifier never collides between the two apps.
 
 ## Data Structures (MatroidLibrary.sol)
 
@@ -1109,8 +1097,8 @@ epochTotalWeight[epoch] += weight
 
 ### Access Control
 - **MatroidKit**: Only MatroidKit can call `MatroidRegistry.registerProject()` and `recordFlow()`
-- **Owner**: `setMatroidKit()` (Registry, one-time); on Treasury `setSlashingContract()` and `setGovernance()` (both set-once) plus `renounceOwnership()`. After wiring + renounce, no owner remains.
-- **Governance**: `Treasury.setBudgets()` / `extendDuration()` are callable by either `governance` (MatroidGovernance, public stake-weighted) or `anonGovernance` (MatroidAnonGovernance, anonymous ZK) via `onlyAnyGovernance` — both wired set-once by the owner, both require a passed vote, neither can disable the other.
+- **Owner**: `setMatroidKit()` (Registry, one-time); on Treasury `setSlashingContract()` and `setAnonGovernance()` (both set-once) plus `renounceOwnership()`. After wiring + renounce, no owner remains.
+- **Governance**: `Treasury.setBudgets()` / `extendDuration()` are callable only by `anonGovernance` (MatroidAnonGovernance, anonymous ZK) via `onlyAnyGovernance` — wired set-once by the owner, requires a passed vote.
 - **Sponsor**: `SponsorVault.deposit()` is fully permissionless; `notifyReward()` is callable by anyone holding MONA to distribute (in practice, a sale/market contract), reverting `NoSponsors` if `totalPoints == 0`.
 - **Project**: Only project address can call `setRewardSplits()`, `setClaimer()`, `addRewardToken()`, `removeRewardToken()`, `setNftWeight()`
 - **Claimer**: Only authorized claimers can call `Treasury.claim()`
@@ -1217,38 +1205,38 @@ minVoterDivisorValue: 100 // minVoters = uniqueUsers / 100, min 3
 maxSlashBpsValue: 5000 // max 50% slash
 thresholdBpsValue: 5000 // 50% of total weight required to pass
 
-// MatroidGovernance
-monaToken: 0x...
-treasuryAddress: 0x... // from Treasury deployment
-votingWindowSeconds: 259200 // 3 days
-minProposeStakeAmount: 1000000000000000000 // 1 MONA to open a proposal
-quorumBpsValue: 1000 // 10% of MONA total supply must participate
-thresholdBpsValue: 6000 // 60% yes to pass
-
 // Deploy order (achieves "no owner"):
 //   Registry -> Kit -> Registry.setMatroidKit -> Scorer -> GlobalPool -> Treasury
 //   -> SlashingCouncil -> Treasury.setSlashingContract (set-once)
-//   -> MatroidGovernance -> Treasury.setGovernance (set-once)
 //   For chip-weighted activity: deploy the `activity` ZK verifier (via bb) + IdentityRegistry,
 //   then MatroidKit.setVerification(activityVerifier, identityRegistry) (set-once).
 //   For anonymous budget governance: deploy the shared `voting` ZK verifier (via bb) +
-//   IdentityRegistry (reuse the one above if already deployed) + MonaBalanceTree,
-//   then MatroidAnonGovernance(votingVerifier, identityRegistry, monaBalanceTree, treasury, ...)
-//   -> Treasury.setAnonGovernance (set-once, additive — does not require MatroidGovernance).
+//   Semaphore + IdentityRegistry (reuse if already deployed) + BalancePool(hasher, mona, initialBucket),
+//   then MatroidAnonGovernance(votingVerifier, semaphore, groupId, balancePool, treasury, paymaster, ...)
+//   -> BalancePool.setGovernance([matroidAnonGovernance]) (one-shot, locks)
+//   -> Treasury.setAnonGovernance (set-once)
+//   -> MatroidPaymaster.transferGovernance(matroidAnonGovernance) (after registering consumers;
+//      irrevocable — after this the paymaster has no admin, only votes).
 //   For sponsorship: deploy SponsorVault(gasPoolAddress, monaToken) — standalone, no wiring
 //   into Treasury/Registry required; sale/market contracts call its notifyReward() directly.
-//   -> Treasury.renounceOwnership() (only after governance is set; anonGovernance optional).
+//   -> Treasury.renounceOwnership() (only after anonGovernance is set).
 
 // SponsorVault
 gasPoolAddress: 0x... // the paymaster / gas pool contract
 monaToken: 0x...
 
+// BalancePool (fixed buckets: 0.01, 0.1, 0.25, 0.5, 0.75, 1, 5, 7, 10 MONA)
+hasherAddress: 0x...   // PoseidonHasher (IPoseidon -> PoseidonT3)
+monaAddress: 0x...
+initialBucket: 0       // index into the denomination table above
+
 // MatroidAnonGovernance
 votingVerifierAddress: 0x... // deployed `voting` circuit verifier (bb)
-identityAddress: 0x...       // IdentityRegistry
-snapshotAddress: 0x...       // MonaBalanceTree
+semaphoreAddress: 0x...      // Semaphore core (SemaphoreVerifierZk on EraVM)
+groupId_: 0                  // IdentityRegistry's group
+poolAddress: 0x...           // BalancePool above
 treasuryAddress: 0x...
-minBalance_: 1000000000000000000 // 1 MONA minimum to vote
+paymasterAddress: 0x...      // MatroidPaymaster (governance transferred here post-deploy)
 votingWindow_: 259200             // 3 days
 quorum_: 5                        // raw yes-vote count to pass (not bps of supply)
 quorumFloor_: 5                   // immutable floor, quorum_ must be >= this
@@ -1350,11 +1338,7 @@ await council.withdrawStake(epoch, projectAddress)
 
 ## Subgraph
 
-The matroid subgraph indexes the protocol's core entities (`Global`, `Project`, `Epoch`, `Staker`, `ProjectPoolERC20`/`ProjectPoolNFT`, slashing `Proposal`/`Voter`, etc.) plus the entities below, added alongside SponsorVault and the two governance paths.
-
-**Public budget governance (MatroidGovernance)**:
-- `BudgetProposal` — `proposalId`, `baseBudget`, `perProjectBudget`, `newDuration`, `endTime`, `yesWeight`, `noWeight`, `executed`, `passed`, `applied`
-- `BudgetVote` — one per `Voted` event: `proposal`, `voter`, `inFavor`, `amount`
+The matroid subgraph indexes the protocol's core entities (`Global`, `Project`, `Epoch`, `Staker`, `ProjectPoolERC20`/`ProjectPoolNFT`, slashing `Proposal`/`Voter`, etc.) plus the entities below, added alongside SponsorVault and anonymous governance.
 
 **Anonymous budget governance (MatroidAnonGovernance)**:
 - `AnonBudgetProposal` — `proposalId`, `baseBudget`, `perProjectBudget`, `newDuration`, `end`, `yes`, `no`, `executed`, `passed`, `applied`. No per-voter entity — votes are anonymous, only the aggregate tally is recorded.
@@ -1363,9 +1347,9 @@ The matroid subgraph indexes the protocol's core entities (`Global`, `Project`, 
 - `SponsorVault` (singleton) — `totalPoints`, `accRewardPerPoint`, `totalDeposited`, `totalRewards`, `totalClaimed`, `sponsorCount`
 - `Sponsor` — per depositor: `points`, `totalDeposited`, `totalClaimed`
 
-**Shared ZK infrastructure** (also consumed by dx.computer's DxCouncil, matroid's SponsorCouncil paymaster governance, and MatroidKit's chip-weighted activity proofs):
+**Shared ZK infrastructure** (the identity part is also consumed by dx.computer's DxCouncil and MatroidKit's chip-weighted activity proofs; the pool is matroid's own — dx has a separate one):
 - `Enrollment` — one per `IdentityRegistry.Enrolled` event: `commitment`, `leafIndex`, `root`. The client rebuilds the identity Merkle tree from this list (ordered by `leafIndex`) to produce membership proofs for voting.
-- `BalanceLeaf` — one per `MonaBalanceTree.Registered` event: `holder`, `balance`, `leafIndex`, `root`. Same role, for the balance-eligibility proof.
+- `PoolEvent` — one per `BalancePool.Deposited` or `Withdrawn` event: `bucket`, `kind` ("deposit"/"withdraw"), `commitment`, `leafIndex`, `root`, `blockNumber`, `logIndex`. The client replays these in order (deposits insert, withdrawals zero the leaf) to rebuild the bucket's tree at a proposal's snapshot root and prove its own deposit is in it — without revealing which.
 
 ## Testing Checklist
 
@@ -1441,8 +1425,9 @@ The matroid subgraph indexes the protocol's core entities (`Global`, `Project`, 
 - **Resolution**: Batch processing of failed proposal penalties
 - **Accumulator**: Running total (rewardPerToken) for fair reward distribution
 - **Sponsor**: An address that deposits ETH into the SponsorVault to fund the gas pool behind anonymous actions; earns MONA proportional to their share of total points; deposits are one-way, not staked, not withdrawable
-- **Anonymous Governance**: A voting path (MatroidAnonGovernance) that reaches the same Treasury budget controls as MatroidGovernance, but proves eligibility in zero knowledge instead of revealing a wallet — parallel to, never merged with, the public path
+- **Anonymous Governance**: The protocol's governance (MatroidAnonGovernance) — voters prove eligibility (enrolled chip + a shielded pool deposit) in zero knowledge instead of revealing a wallet; controls Treasury budgets, the BalancePool bucket, and the MatroidPaymaster
 - **Nullifier**: A one-time value derived from a voter's private identity and the proposal id, consumed on vote to prevent voting twice without revealing who voted
 - **Identity Root**: The current Merkle root of IdentityRegistry's enrolled-chip tree, snapshotted into a proposal at creation time so later enrollments can't retroactively expand who could have voted on it
-- **Balance Root**: The current Merkle root of MonaBalanceTree's registered-balance tree, snapshotted the same way, used to prove "I hold at least the minimum MONA" without revealing which leaf is mine
+- **Pool Root**: The Merkle root of the BalancePool's active-bucket deposit tree, snapshotted the same way, used to prove "I hold a deposit of the required denomination" without revealing which deposit is mine — deposits are withdrawable at any time by the depositing wallet
+- **Bucket**: One of the BalancePool's nine fixed deposit denominations (0.01–10 MONA); a single bucket is active at a time and changing it is itself a governance vote (`proposeBucket`)
 - **Debt**: Per-user snapshot of accumulator at last interaction

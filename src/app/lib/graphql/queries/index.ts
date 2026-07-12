@@ -5,5 +5,5 @@ export {
   EPOCHS_LIST_QUERY,
   EPOCHS_PANEL_QUERY,
   ENROLLMENTS_QUERY,
-  BALANCE_LEAVES_QUERY,
+  POOL_EVENTS_QUERY,
 } from "@/app/lib/graphql/matroid";

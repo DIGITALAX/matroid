@@ -33,12 +33,16 @@ export const ENROLLMENTS_QUERY = `
   }
 `;
 
-export const BALANCE_LEAVES_QUERY = `
-  query BalanceLeaves {
-    balanceLeaves(first: 1000, orderBy: leafIndex, orderDirection: asc) {
-      balanceKey
-      balance
+export const POOL_EVENTS_QUERY = `
+  query PoolEvents($bucket: Int!) {
+    poolEvents(first: 1000, where: { bucket: $bucket }, orderBy: blockNumber, orderDirection: asc) {
+      bucket
+      kind
+      commitment
       leafIndex
+      root
+      blockNumber
+      logIndex
     }
   }
 `;

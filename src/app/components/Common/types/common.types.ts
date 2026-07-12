@@ -37,8 +37,7 @@ export interface CoreContractAddresses {
   GlobalStakingPool: `0x${string}`;
   Treasury: `0x${string}`;
   SlashingCouncil: `0x${string}`;
-  MatroidGovernance: `0x${string}`;
   MatroidAnonGovernance: `0x${string}`;
   IdentityRegistry: `0x${string}`;
-  MonaBalanceTree: `0x${string}`;
+  BalancePool: `0x${string}`;
 }

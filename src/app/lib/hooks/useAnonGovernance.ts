@@ -11,12 +11,14 @@ import { useCoreAddresses } from "@/app/lib/hooks/useCoreAddresses";
 import { ensureIdentity, getIdentity } from "@/app/lib/zk/identity";
 import {
   buildGroupAt,
+  councilScope,
   generateScopedProof,
   semaphoreNullifier,
+  scopeHash,
   toContractProof,
-  BALANCE_LINK_SCOPE,
 } from "@/app/lib/zk/identityTree";
-import { buildBalanceProof } from "@/app/lib/zk/balanceTree";
+import { buildPoolProof } from "@/app/lib/zk/poolTree";
+import { toHex32 } from "@/app/lib/zk/poseidon";
 import { prove } from "@/app/lib/zk/prover";
 import { paymasterFields } from "@/app/lib/zk/paymaster";
 import { anonReady, anonWriteContract } from "@/app/lib/zk/anonSigner";
@@ -52,13 +54,6 @@ export const useAnonGovernance = () => {
     query: { enabled: ready },
   });
   const quorum = typeof quorumRaw === "bigint" ? quorumRaw : 0n;
-
-  const { data: minBalanceRaw } = useReadContract({
-    ...base,
-    functionName: "minBalance",
-    query: { enabled: ready },
-  });
-  const minBalance = typeof minBalanceRaw === "bigint" ? minBalanceRaw : 0n;
 
   const { data: list } = useReadContracts({
     contracts: Array.from({ length: count }, (_, i) => ({
@@ -119,7 +114,10 @@ export const useAnonGovernance = () => {
       const mine: Record<number, 0 | 1> = {};
       for (const l of logs) {
         const pid = Number(l.args.id ?? 0n);
-        const expected = semaphoreNullifier(BigInt(pid), id.secretScalar);
+        const expected = semaphoreNullifier(
+          councilScope(anonGov as `0x${string}`, BigInt(pid)),
+          id.secretScalar,
+        );
         if (BigInt(l.args.nullifier ?? 0n) === expected) {
           mine[pid] = Number(l.args.choice ?? 0) as 0 | 1;
         }
@@ -177,6 +175,41 @@ export const useAnonGovernance = () => {
     return done;
   };
 
+  const proposeVia = async (functionName: string, args: unknown[]) => {
+    if (!guard()) return;
+    const done = anonReady()
+      ? await trackAnon("txPropose", () =>
+          anonWriteContract({
+            address: base.address,
+            abi,
+            functionName,
+            args,
+          }),
+        )
+      : await track("txPropose", () =>
+          writeContractAsync({
+            ...base,
+            functionName,
+            args,
+            ...paymasterFields(),
+          } as never),
+        );
+    if (done) {
+      refetch();
+      refetchTallies();
+    }
+    return done;
+  };
+
+  const proposeBucket = (newBucket: number) => proposeVia("proposeBucket", [newBucket]);
+  const proposeCap = (project: `0x${string}`, cap: bigint) =>
+    proposeVia("proposeCap", [project, cap]);
+  const proposeDefaultCap = (cap: bigint) => proposeVia("proposeDefaultCap", [cap]);
+  const proposeRegister = (project: `0x${string}`, active: boolean) =>
+    proposeVia("proposeRegister", [project, active]);
+  const proposeBlacklist = (project: `0x${string}`, banned: boolean) =>
+    proposeVia("proposeBlacklist", [project, banned]);
+
   const failVote = (message: string) => {
     setTx?.({ open: true, status: "error", label: "txVoteAnon", message });
   };
@@ -209,7 +242,8 @@ export const useAnonGovernance = () => {
       return;
     }
     const identityRoot = BigInt(pdata[0] as bigint);
-    const balanceRoot = BigInt(pdata[1] as string);
+    const poolRoot = BigInt(pdata[1] as string);
+    const bucket = Number(pdata[2] as number | bigint);
 
     let group;
     try {
@@ -223,48 +257,43 @@ export const useAnonGovernance = () => {
       return;
     }
 
-    const voteProof = await generateScopedProof(identity, group, BigInt(choice), proposalId);
+    const scope = councilScope(anonGov as `0x${string}`, proposalId);
+    const voteProof = await generateScopedProof(identity, group, BigInt(choice), scope);
     if (!voteProof) {
       failVote("txNotEnrolled");
       return;
     }
-    const balanceLinkProof = await generateScopedProof(identity, group, 0n, BALANCE_LINK_SCOPE);
-    if (!balanceLinkProof) {
-      failVote("txNotEnrolled");
-      return;
-    }
 
-    const balanceKey = BigInt(balanceLinkProof.nullifier);
-    let balr;
+    let poolr;
     try {
-      balr = await buildBalanceProof(balanceKey, balanceRoot);
+      poolr = await buildPoolProof(identity.secretScalar, bucket, poolRoot);
+      for (let attempt = 0; attempt < 5 && !poolr.ok; attempt++) {
+        poolr = await buildPoolProof(identity.secretScalar, bucket);
+        if (!poolr.ok) {
+          await new Promise((resolve) => setTimeout(resolve, 2000));
+        }
+      }
     } catch {
       failVote("txSubgraphDown");
       return;
     }
-    if (!balr.ok) {
-      failVote(
-        balr.reason === "unregistered"
-          ? "txNoBalanceLeaf"
-          : balr.reason === "registeredLate"
-            ? "txRegisteredLate"
-            : "txNoSnapshot",
-      );
+    if (!poolr.ok) {
+      failVote(poolr.reason === "noSnapshot" ? "txNoSnapshot" : "txNoDeposit");
       return;
     }
-    const balp = balr.data;
+    const poolp = poolr.data;
 
-    let balanceZkProof: `0x${string}`;
+    let poolZkProof: `0x${string}`;
     try {
       const proved = await prove("voting", {
-        balance: balp.balance.toString(),
-        bal_siblings: balp.proof.siblings.map((s) => s.toString()),
-        bal_indices: balp.proof.indices,
-        balance_root: balp.root.toString(),
-        min_balance: minBalance.toString(),
-        balance_key: balanceKey.toString(),
+        identity_secret: identity.secretScalar.toString(),
+        deposit_r: poolr.r!.toString(),
+        siblings: poolp.proof.siblings.map((s) => s.toString()),
+        indices: poolp.proof.indices,
+        pool_root: poolp.root.toString(),
+        scope_hash: scopeHash(scope).toString(),
       });
-      balanceZkProof = proved.proof as `0x${string}`;
+      poolZkProof = proved.proof as `0x${string}`;
     } catch {
       failVote("txProofFailed");
       return;
@@ -272,8 +301,8 @@ export const useAnonGovernance = () => {
 
     const voteArgs = [
       toContractProof(voteProof),
-      toContractProof(balanceLinkProof),
-      balanceZkProof,
+      poolZkProof,
+      toHex32(poolp.root),
       proposalId,
     ];
     const done = anonReady()
@@ -338,6 +367,11 @@ export const useAnonGovernance = () => {
     refetch,
     loadMyVotes,
     propose,
+    proposeBucket,
+    proposeCap,
+    proposeDefaultCap,
+    proposeRegister,
+    proposeBlacklist,
     vote,
     execute,
   };

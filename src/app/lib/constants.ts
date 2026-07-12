@@ -83,10 +83,9 @@ export const CORE_CONTRACT_ADDRESSES: Record<number, CoreContractAddresses> = {
     GlobalStakingPool: "0x3ccA24e1A0e49654bc3482ab70199b7400eb7A3a",
     Treasury: "0xfC3c03385dA8D5Adfb8BDF5f5fe156fb5B3a6Ee2",
     SlashingCouncil: "0x1055780Bd25e2F698E7c9a95FBaf4cb565A23A14",
-    MatroidGovernance: "0x9035E63C5Ac74dE843F176BE6B9869cA2385C61d",
     MatroidAnonGovernance: "0x",
     IdentityRegistry: "0x22F4D93be0E8C0C081e74c0d5e697B64eEA007FF",
-    MonaBalanceTree: "0x23ceE3FB585b1e5092b7CFB222e8e873B05E9519",
+    BalancePool: "0x",
   },
   [NETWORKS.ZKSYNC.chainId]: {
     Mona: "0x1F0151386fB0AbBF0273238dF5E9bc519DE5e20B",
@@ -97,10 +96,9 @@ export const CORE_CONTRACT_ADDRESSES: Record<number, CoreContractAddresses> = {
     GlobalStakingPool: "0x3ccA24e1A0e49654bc3482ab70199b7400eb7A3a",
     Treasury: "0xfC3c03385dA8D5Adfb8BDF5f5fe156fb5B3a6Ee2",
     SlashingCouncil: "0x1055780Bd25e2F698E7c9a95FBaf4cb565A23A14",
-    MatroidGovernance: "0x9035E63C5Ac74dE843F176BE6B9869cA2385C61d",
-    MatroidAnonGovernance: "0xf43624d811c5DC9eF91cF237ab9B8eE220D438eE",
+    MatroidAnonGovernance: "0xE015ADD43D2C41e8Af4e9238e389101884853896",
     IdentityRegistry: "0x22F4D93be0E8C0C081e74c0d5e697B64eEA007FF",
-    MonaBalanceTree: "0x23ceE3FB585b1e5092b7CFB222e8e873B05E9519",
+    BalancePool: "0xEBf9D3ead9A8c2bb8cEa438B8Dfa9f1AFf44bfa7",
   },
   [NETWORKS.LENS_MAINNET.chainId]: {
     Mona: "0x",
@@ -111,10 +109,9 @@ export const CORE_CONTRACT_ADDRESSES: Record<number, CoreContractAddresses> = {
     GlobalStakingPool: "0x",
     Treasury: "0x",
     SlashingCouncil: "0x",
-    MatroidGovernance: "0x",
     MatroidAnonGovernance: "0x",
     IdentityRegistry: "0x",
-    MonaBalanceTree: "0x",
+    BalancePool: "0x",
   },
 };
 
