@@ -2,7 +2,11 @@
 
 import { FunctionComponent, JSX, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
-import { formatUnits, parseUnits } from "viem";
+import { useReadContract } from "wagmi";
+import { formatUnits, parseUnits, type Abi } from "viem";
+import { getABI } from "@/app/abis";
+import { useCoreAddresses } from "@/app/lib/hooks/useCoreAddresses";
+import { DEFAULT_NETWORK } from "@/app/lib/constants";
 import { formatDuration } from "@/app/lib/format/time";
 import Caja from "@/app/components/Create/modules/Caja";
 import ActionButton from "@/app/components/Common/modules/ActionButton";
@@ -30,7 +34,9 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
   const chip = useChip();
   const identity = useIdentity(chip.commitment);
   const pool = usePool();
-  const [poolDeposited, setPoolDeposited] = useState<boolean>(false);
+  const [poolDeposits, setPoolDeposits] = useState<
+    { bucket: number; denomination: bigint }[]
+  >([]);
   const nowSec = useChainClock();
 
   const [base, setBase] = useState<string>("");
@@ -57,9 +63,49 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
 
   useEffect(() => {
     if (chip.connected && identity.enrolled) {
-      pool.hasDeposit().then(setPoolDeposited);
+      pool.deposits().then(setPoolDeposits);
     }
   }, [chip.connected, identity.enrolled, pool.activeBucket, pool.isPending]);
+
+  const activeDeposited = poolDeposits.some(
+    (d) => d.bucket === pool.activeBucket,
+  );
+
+  const addresses = useCoreAddresses();
+  const anonGovAddr = addresses.MatroidAnonGovernance as `0x${string}`;
+  const treasuryAddr = addresses.Treasury as `0x${string}`;
+  const { data: windowRaw } = useReadContract({
+    address: anonGovAddr,
+    abi: getABI("MatroidAnonGovernance") as Abi,
+    chainId: DEFAULT_NETWORK.chainId,
+    functionName: "votingWindow",
+    query: { enabled: ag.ready },
+  });
+  const { data: baseBudgetRaw } = useReadContract({
+    address: treasuryAddr,
+    abi: getABI("Treasury") as Abi,
+    chainId: DEFAULT_NETWORK.chainId,
+    functionName: "baseBudgetAmount",
+    query: { enabled: isAddr(treasuryAddr) },
+  });
+  const { data: perBudgetRaw } = useReadContract({
+    address: treasuryAddr,
+    abi: getABI("Treasury") as Abi,
+    chainId: DEFAULT_NETWORK.chainId,
+    functionName: "perProjectBudget",
+    query: { enabled: isAddr(treasuryAddr) },
+  });
+  const { data: quorumRaw } = useReadContract({
+    address: anonGovAddr,
+    abi: getABI("MatroidAnonGovernance") as Abi,
+    chainId: DEFAULT_NETWORK.chainId,
+    functionName: "quorumFloor",
+    query: { enabled: ag.ready },
+  });
+  const windowText =
+    typeof windowRaw === "bigint" ? formatDuration(windowRaw.toString()) : "—";
+  const fmtMona = (v: unknown): string =>
+    typeof v === "bigint" ? `${Number(formatUnits(v, 18)).toLocaleString()} MONA` : "—";
 
   const input =
     "relative w-full flex border-2 border-black bg-white/80 px-2 py-1 text-sm text-black font-earl focus:outline-none";
@@ -116,6 +162,29 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
               </span>
             </div>
           )}
+        </div>
+
+        <div className="relative w-full flex flex-col gap-1 border-2 border-black bg-white/60 p-3">
+          <span className="relative flex font-digiB uppercase text-sm">
+            {dict?.currentValues}
+          </span>
+          <span className="relative flex text-[11px]">
+            {dict?.currentBucket}: {pool.activeBucket}
+            {pool.denomination > 0n
+              ? ` · ${Number(formatUnits(pool.denomination, 18)).toLocaleString()} MONA`
+              : ""}
+          </span>
+          <span className="relative flex text-[11px]">
+            {dict?.votingTime}: {windowText}
+          </span>
+          <span className="relative flex text-[11px]">
+            {dict?.currentQuorum}:{" "}
+            {typeof quorumRaw === "bigint" ? quorumRaw.toString() : "—"}
+          </span>
+          <span className="relative flex text-[11px]">
+            {dict?.baseLabel} {fmtMona(baseBudgetRaw)} · {dict?.perProjectLabel}{" "}
+            {fmtMona(perBudgetRaw)}
+          </span>
         </div>
 
         <div className="relative w-full flex flex-col gap-2 border-2 border-black bg-white/60 p-3">
@@ -272,21 +341,32 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
             <span className="relative flex font-digiB uppercase text-sm">
               {dict?.poolTitle}
             </span>
-            {poolDeposited ? (
-              <>
-                <span className="relative flex text-[10px] text-green-700">
-                  ✓ {dict?.poolDeposited}
-                </span>
-                <ActionButton
-                  size="sm"
-                  showIcon={false}
-                  label={dict?.poolWithdraw}
-                  disabled={!pool.ready}
-                  loading={pool.isPending}
-                  onClick={pool.withdraw}
-                />
-              </>
-            ) : (
+
+            {poolDeposits.length > 0 && (
+              <div className="relative w-full flex flex-col gap-2">
+                {poolDeposits.map((d) => (
+                  <div
+                    key={d.bucket}
+                    className="relative w-full flex flex-row items-center gap-2"
+                  >
+                    <span className="relative flex flex-1 text-[10px] text-green-700">
+                      ✓ {dict?.poolDeposited} ·{" "}
+                      {Number(formatUnits(d.denomination, 18)).toLocaleString()} MONA
+                    </span>
+                    <ActionButton
+                      size="sm"
+                      showIcon={false}
+                      label={dict?.poolWithdraw}
+                      disabled={!pool.ready}
+                      loading={pool.isPending}
+                      onClick={() => pool.withdraw(d.bucket)}
+                    />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!activeDeposited && (
               <>
                 <span className="relative flex text-[10px] leading-relaxed opacity-70">
                   {dict?.poolInfo}
@@ -431,7 +511,7 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
               {myVote === 1 ? dict?.voteFor : dict?.voteAgainst}
             </span>
           ) : null}
-          {confirm?.id === row.id ? (
+          {executed ? null : confirm?.id === row.id ? (
             <div className="relative flex flex-row flex-wrap gap-2 items-center">
               <span>
                 {dict?.confirmVote}{" "}
@@ -457,30 +537,35 @@ const GovernEntry: FunctionComponent<{ dict: any }> = ({ dict }): JSX.Element =>
             </div>
           ) : (
             <div className="relative flex flex-row flex-wrap gap-2 items-center">
-              <ActionButton
-                size="sm"
-                showIcon={false}
-                label={dict?.voteFor}
-                disabled={!ag.ready || !openNow || myVote !== undefined}
-                loading={ag.busy || ag.isPending}
-                onClick={() => startVote(row.id, 1)}
-              />
-              <ActionButton
-                size="sm"
-                showIcon={false}
-                label={dict?.voteAgainst}
-                disabled={!ag.ready || !openNow || myVote !== undefined}
-                loading={ag.busy || ag.isPending}
-                onClick={() => startVote(row.id, 0)}
-              />
-              <ActionButton
-                size="sm"
-                showIcon={false}
-                label={dict?.execute}
-                disabled={!ag.ready || executed || nowSec < end}
-                loading={ag.isPending}
-                onClick={() => ag.execute(BigInt(row.id))}
-              />
+              {openNow ? (
+                <>
+                  <ActionButton
+                    size="sm"
+                    showIcon={false}
+                    label={dict?.voteFor}
+                    disabled={!ag.ready || myVote !== undefined}
+                    loading={ag.busy || ag.isPending}
+                    onClick={() => startVote(row.id, 1)}
+                  />
+                  <ActionButton
+                    size="sm"
+                    showIcon={false}
+                    label={dict?.voteAgainst}
+                    disabled={!ag.ready || myVote !== undefined}
+                    loading={ag.busy || ag.isPending}
+                    onClick={() => startVote(row.id, 0)}
+                  />
+                </>
+              ) : (
+                <ActionButton
+                  size="sm"
+                  showIcon={false}
+                  label={dict?.execute}
+                  disabled={!ag.ready}
+                  loading={ag.isPending}
+                  onClick={() => ag.execute(BigInt(row.id))}
+                />
+              )}
             </div>
           )}
         </div>

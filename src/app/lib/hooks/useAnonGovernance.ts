@@ -5,18 +5,26 @@ import {
   useReadContracts,
   useWriteContract,
 } from "wagmi";
-import { parseAbiItem, parseUnits, type Abi } from "viem";
+import {
+  encodeAbiParameters,
+  keccak256,
+  parseAbiItem,
+  parseUnits,
+  sliceHex,
+  stringToHex,
+  type Abi,
+  type Hex,
+} from "viem";
 import { getABI } from "@/app/abis";
 import { useCoreAddresses } from "@/app/lib/hooks/useCoreAddresses";
-import { ensureIdentity, getIdentity } from "@/app/lib/zk/identity";
 import {
-  buildGroupAt,
-  councilScope,
-  generateScopedProof,
-  semaphoreNullifier,
-  scopeHash,
-  toContractProof,
-} from "@/app/lib/zk/identityTree";
+  chipActionProof,
+  nullifierOf,
+  peekSeedField,
+  scopeOf,
+  seedField,
+} from "@/app/lib/zk/chipAction";
+import { buildIdentityTree } from "@/app/lib/zk/chipEnrollments";
 import { buildPoolProof } from "@/app/lib/zk/poolTree";
 import { toHex32 } from "@/app/lib/zk/poseidon";
 import { prove } from "@/app/lib/zk/prover";
@@ -27,6 +35,18 @@ import { DEFAULT_NETWORK } from "@/app/lib/constants";
 
 const isAddr = (a?: string): a is `0x${string}` =>
   !!a && /^0x[0-9a-fA-F]{40}$/.test(a);
+
+const VOTE_TAG = sliceHex(
+  keccak256(stringToHex("matroidAnonGovernance.vote")),
+  0,
+  4,
+);
+const PROPOSE_TAG = sliceHex(
+  keccak256(stringToHex("matroidAnonGovernance.propose")),
+  0,
+  4,
+);
+const ZERO_ADDR = "0x0000000000000000000000000000000000000000" as const;
 
 export const useAnonGovernance = () => {
   const addresses = useCoreAddresses();
@@ -101,24 +121,24 @@ export const useAnonGovernance = () => {
   const [busy, setBusy] = useState<boolean>(false);
 
   const loadMyVotes = async () => {
-    const id = getIdentity();
-    if (!id || !ready || !publicClient) return;
+    const seed = peekSeedField();
+    if (!seed || !ready || !publicClient) return;
     try {
       const logs = await publicClient.getLogs({
         address: anonGov as `0x${string}`,
         event: parseAbiItem(
-          "event Voted(uint256 indexed id, uint8 choice, uint256 nullifier)",
+          "event Voted(uint256 indexed id, uint8 choice, bytes32 nullifier)",
         ),
         fromBlock: 0n,
       });
       const mine: Record<number, 0 | 1> = {};
       for (const l of logs) {
         const pid = Number(l.args.id ?? 0n);
-        const expected = semaphoreNullifier(
-          councilScope(anonGov as `0x${string}`, BigInt(pid)),
-          id.secretScalar,
+        const expected = nullifierOf(
+          seed,
+          scopeOf(anonGov as `0x${string}`, VOTE_TAG, BigInt(pid)),
         );
-        if (BigInt(l.args.nullifier ?? 0n) === expected) {
+        if (l.args.nullifier === expected) {
           mine[pid] = Number(l.args.choice ?? 0) as 0 | 1;
         }
       }
@@ -140,75 +160,120 @@ export const useAnonGovernance = () => {
     return true;
   };
 
-  const propose = async (
+  const chipPropose = async (
+    kind: number,
+    project: `0x${string}`,
+    flag: boolean,
+    v1: bigint,
+    v2: bigint,
+    v3: bigint,
+  ) => {
+    const registry = addresses.IdentityRegistry;
+    if (!isAddr(registry) || !publicClient) {
+      setTx?.({ open: true, status: "error", label: "txPropose", message: "registryMissing" });
+      return null;
+    }
+    setTx?.({ open: true, status: "proving", label: "txPropose" });
+    const { tree, leaves } = await buildIdentityTree(
+      publicClient,
+      registry as Hex,
+    );
+    const payloadHash = keccak256(
+      encodeAbiParameters(
+        [
+          { type: "uint8" },
+          { type: "address" },
+          { type: "bool" },
+          { type: "uint256" },
+          { type: "uint256" },
+          { type: "uint256" },
+        ],
+        [kind, project, flag, v1, v2, v3],
+      ),
+    );
+    return chipActionProof({
+      contract: anonGov as Hex,
+      chainId: DEFAULT_NETWORK.chainId,
+      actionTag: PROPOSE_TAG,
+      scopeSeed: BigInt(payloadHash),
+      payloadHash,
+      label: "propose",
+      tree,
+      leaves,
+    });
+  };
+
+  const proposeVia = async (
+    functionName: string,
+    kind: number,
+    project: `0x${string}`,
+    flag: boolean,
+    v1: bigint,
+    v2: bigint,
+    v3: bigint,
+    tailArgs: unknown[],
+  ) => {
+    if (!guard()) return;
+    let res;
+    try {
+      res = await chipPropose(kind, project, flag, v1, v2, v3);
+    } catch (e) {
+      console.log("propose failed", e);
+      setTx?.({
+        open: true,
+        status: "error",
+        label: "txPropose",
+        message: e instanceof Error ? e.message : "actFailed",
+      });
+      return;
+    }
+    if (!res) return;
+    const args = [res.proof, res.merkleRoot, res.nullifier, ...tailArgs];
+    const done = anonReady()
+      ? await trackAnon("txPropose", () =>
+          anonWriteContract({
+            address: base.address,
+            abi,
+            functionName,
+            args,
+          }),
+        )
+      : await track("txPropose", () =>
+          writeContractAsync({
+            ...base,
+            functionName,
+            args,
+            ...paymasterFields(),
+          } as never),
+        );
+    if (done) {
+      refetch();
+      refetchTallies();
+    }
+    return done;
+  };
+
+  const propose = (
     baseBudget: string,
     perProjectBudget: string,
     durationSecs: string,
   ) => {
-    if (!guard()) return;
-    const proposeArgs = [
-      baseBudget ? parseUnits(baseBudget, 18) : 0n,
-      perProjectBudget ? parseUnits(perProjectBudget, 18) : 0n,
-      durationSecs ? BigInt(durationSecs) : 0n,
-    ];
-    const done = anonReady()
-      ? await trackAnon("txPropose", () =>
-          anonWriteContract({
-            address: base.address,
-            abi,
-            functionName: "propose",
-            args: proposeArgs,
-          }),
-        )
-      : await track("txPropose", () =>
-          writeContractAsync({
-            ...base,
-            functionName: "propose",
-            args: proposeArgs,
-            ...paymasterFields(),
-          } as never),
-        );
-    if (done) {
-      refetch();
-      refetchTallies();
-    }
-    return done;
+    const b = baseBudget ? parseUnits(baseBudget, 18) : 0n;
+    const p = perProjectBudget ? parseUnits(perProjectBudget, 18) : 0n;
+    const d = durationSecs ? BigInt(durationSecs) : 0n;
+    return proposeVia("propose", 0, ZERO_ADDR, false, b, p, d, [b, p, d]);
   };
 
-  const proposeVia = async (functionName: string, args: unknown[]) => {
-    if (!guard()) return;
-    const done = anonReady()
-      ? await trackAnon("txPropose", () =>
-          anonWriteContract({
-            address: base.address,
-            abi,
-            functionName,
-            args,
-          }),
-        )
-      : await track("txPropose", () =>
-          writeContractAsync({
-            ...base,
-            functionName,
-            args,
-            ...paymasterFields(),
-          } as never),
-        );
-    if (done) {
-      refetch();
-      refetchTallies();
-    }
-    return done;
-  };
-
-  const proposeBucket = (newBucket: number) => proposeVia("proposeBucket", [newBucket]);
+  const proposeBucket = (newBucket: number) =>
+    proposeVia("proposeBucket", 1, ZERO_ADDR, false, BigInt(newBucket), 0n, 0n, [newBucket]);
   const proposeCap = (project: `0x${string}`, cap: bigint) =>
-    proposeVia("proposeCap", [project, cap]);
-  const proposeDefaultCap = (cap: bigint) => proposeVia("proposeDefaultCap", [cap]);
+    proposeVia("proposeCap", 2, project, false, cap, 0n, 0n, [project, cap]);
+  const proposeDefaultCap = (cap: bigint) =>
+    proposeVia("proposeDefaultCap", 3, ZERO_ADDR, false, cap, 0n, 0n, [cap]);
   const proposeRegister = (project: `0x${string}`, active: boolean) =>
-    proposeVia("proposeRegister", [project, active]);
+    proposeVia("proposeRegister", 4, project, active, 0n, 0n, 0n, [project, active]);
   const proposeBlacklist = (project: `0x${string}`, banned: boolean) =>
-    proposeVia("proposeBlacklist", [project, banned]);
+    proposeVia("proposeBlacklist", 5, project, banned, 0n, 0n, 0n, [project, banned]);
 
   const failVote = (message: string) => {
     setTx?.({ open: true, status: "error", label: "txVoteAnon", message });
@@ -226,9 +291,9 @@ export const useAnonGovernance = () => {
 
   const voteInner = async (proposalId: bigint, choice: 0 | 1) => {
     setTx?.({ open: true, status: "proving", label: "txVoteAnon" });
-    let identity;
+    let seed: bigint;
     try {
-      identity = ensureIdentity();
+      seed = await seedField();
     } catch {
       failVote("txNoChip");
       return;
@@ -241,34 +306,21 @@ export const useAnonGovernance = () => {
       failVote("txNoProposal");
       return;
     }
-    const identityRoot = BigInt(pdata[0] as bigint);
+    const identityRoot = BigInt(pdata[0] as string);
     const poolRoot = BigInt(pdata[1] as string);
     const bucket = Number(pdata[2] as number | bigint);
 
-    let group;
-    try {
-      group = await buildGroupAt(identityRoot);
-    } catch {
-      failVote("txSubgraphDown");
-      return;
-    }
-    if (!group) {
-      failVote("txNoEnrollments");
-      return;
-    }
-
-    const scope = councilScope(anonGov as `0x${string}`, proposalId);
-    const voteProof = await generateScopedProof(identity, group, BigInt(choice), scope);
-    if (!voteProof) {
-      failVote("txNotEnrolled");
+    const registry = addresses.IdentityRegistry;
+    if (!isAddr(registry) || !publicClient) {
+      failVote("txNoChip");
       return;
     }
 
     let poolr;
     try {
-      poolr = await buildPoolProof(identity.secretScalar, bucket, poolRoot);
+      poolr = await buildPoolProof(seed, bucket, poolRoot);
       for (let attempt = 0; attempt < 5 && !poolr.ok; attempt++) {
-        poolr = await buildPoolProof(identity.secretScalar, bucket);
+        poolr = await buildPoolProof(seed, bucket);
         if (!poolr.ok) {
           await new Promise((resolve) => setTimeout(resolve, 2000));
         }
@@ -283,15 +335,41 @@ export const useAnonGovernance = () => {
     }
     const poolp = poolr.data;
 
+    let action;
+    try {
+      const { tree, leaves } = await buildIdentityTree(
+        publicClient,
+        registry as Hex,
+        identityRoot,
+      );
+      const payloadHash = keccak256(
+        encodeAbiParameters([{ type: "uint8" }], [choice]),
+      );
+      action = await chipActionProof({
+        contract: anonGov as Hex,
+        chainId: DEFAULT_NETWORK.chainId,
+        actionTag: VOTE_TAG,
+        scopeSeed: proposalId,
+        payloadHash,
+        label: `vote:${proposalId}`,
+        tree,
+        leaves,
+      });
+    } catch (e) {
+      console.log("vote: identity proof failed", e);
+      failVote("txNotEnrolled");
+      return;
+    }
+
     let poolZkProof: `0x${string}`;
     try {
       const proved = await prove("voting", {
-        identity_secret: identity.secretScalar.toString(),
+        identity_secret: seed.toString(),
         deposit_r: poolr.r!.toString(),
         siblings: poolp.proof.siblings.map((s) => s.toString()),
         indices: poolp.proof.indices,
         pool_root: poolp.root.toString(),
-        scope_hash: scopeHash(scope).toString(),
+        scope: action.scope.toString(),
       });
       poolZkProof = proved.proof as `0x${string}`;
     } catch {
@@ -300,10 +378,12 @@ export const useAnonGovernance = () => {
     }
 
     const voteArgs = [
-      toContractProof(voteProof),
+      action.proof,
       poolZkProof,
       toHex32(poolp.root),
       proposalId,
+      choice,
+      action.nullifier,
     ];
     const done = anonReady()
       ? await trackAnon("txVoteAnon", () =>

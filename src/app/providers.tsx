@@ -19,9 +19,13 @@ export const ModalContext = createContext<
 >(undefined);
 
 export const config = createConfig({
-  chains: [chains.mainnet, zksyncInMemoryNode, anvil],
+  chains: [chains.mainnet, chains.testnet, zksyncInMemoryNode, anvil],
   transports: {
     [chains.mainnet.id]: http("https://rpc.lens.xyz"),
+    [chains.testnet.id]: http(
+      process.env.NEXT_PUBLIC_LENS_TESTNET_RPC_URL ||
+        "https://rpc.testnet.lens.xyz",
+    ),
     [zksyncInMemoryNode.id]: http(
       process.env.NEXT_PUBLIC_ZKSYNC_RPC_URL || "http://127.0.0.1:8011",
     ),

@@ -27,7 +27,7 @@ export const useIdentity = (commitment?: string) => {
 
   const { data: enrolled, refetch } = useReadContract({
     ...base,
-    functionName: "hasEnrolled",
+    functionName: "enrolledCommitment",
     args: valid ? [BigInt(commitment as `0x${string}`)] : undefined,
     query: { enabled: Boolean(ready && valid) },
   });
@@ -40,8 +40,10 @@ export const useIdentity = (commitment?: string) => {
 
   const enroll = async (
     proof: string,
-    commitmentArg: string,
+    freshBind: string,
     enrollNullifier: string,
+    commitmentArg: string,
+    siblings: string[],
   ) => {
     if (!ready) {
       console.log("IdentityRegistry address not configured");
@@ -49,8 +51,10 @@ export const useIdentity = (commitment?: string) => {
     }
     const args = [
       proof as `0x${string}`,
-      BigInt(commitmentArg as `0x${string}`),
+      freshBind as `0x${string}`,
       enrollNullifier as `0x${string}`,
+      BigInt(commitmentArg as `0x${string}`),
+      siblings as `0x${string}`[],
     ];
     const done = anonReady()
       ? await trackAnon("txEnroll", () =>

@@ -26,6 +26,8 @@ export type ChipEnrollData = {
   commitment: `0x${string}`;
   proof: `0x${string}`;
   enrollNullifier: `0x${string}`;
+  freshBind: `0x${string}`;
+  siblings: `0x${string}`[];
 };
 
 export interface CoreContractAddresses {

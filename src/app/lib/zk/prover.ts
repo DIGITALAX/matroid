@@ -2,7 +2,7 @@ import { Noir } from "@noir-lang/noir_js";
 import { Barretenberg, UltraHonkBackend } from "@aztec/bb.js";
 import { toHex } from "viem";
 
-type CircuitName = "voting" | "enrollment";
+type CircuitName = "voting" | "enrollment" | "identity_action";
 
 const cache: { [k: string]: { bytecode: string } } = {};
 
@@ -15,8 +15,10 @@ const getApi = (): Promise<Barretenberg> => {
 const loadCircuit = async (name: CircuitName) => {
   if (cache[name]) return cache[name];
   const res = await fetch(`/circuits/${name}.json`);
-  if (!res.ok)
-    throw new Error(`circuit ${name} not found at /circuits/${name}.json`);
+  if (!res.ok) {
+    console.log(`circuit ${name} not found at /circuits/${name}.json`);
+    throw new Error("circuitMissing");
+  }
   const json = await res.json();
   cache[name] = json;
   return json;

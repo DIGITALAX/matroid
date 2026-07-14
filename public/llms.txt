@@ -75,7 +75,7 @@ that anonymity still costs gas, and someone has to cover it. a sponsor deposits 
 
 this is a different role from a staker. a staker locks MONA against a project's activity and score, and can unstake. a sponsor funds anonymity itself, and the relationship is one-way by design.
 
-governance is anonymous. MatroidAnonGovernance is the only governance contract: the vote proves two things in zero knowledge instead of revealing a wallet — that the voter holds an enrolled identity (the chip, via IdentityRegistry), and that the voter holds a MONA deposit in the shielded BalancePool (a fixed-denomination commitment pool: deposit once from a wallet, vote forever without one). the vote emits a per-proposal nullifier derived from the chip secret, so no one can vote twice on the same proposal and no two votes are linkable to each other or to any wallet. eligibility is bucketed: the pool has nine fixed deposit sizes (0.01 to 10 MONA) and one active bucket at a time, itself changeable only by vote. beyond budgets, MatroidAnonGovernance also governs the paymaster (the gas sponsor): proposals can set per-project gas caps, change the default cap, register or block a project from sponsored gas — so if a project abuses the shared fuel, the anonymous voters can throttle or cut it, with no admin anywhere. it is the single address wired into the Treasury's budget controls.
+governance is anonymous. MatroidAnonGovernance is the only governance contract: the vote proves two things in zero knowledge instead of revealing a wallet — that the voter holds an enrolled identity (the chip, via IdentityRegistry), and that the voter holds a MONA deposit in the shielded BalancePool (a fixed-denomination commitment pool: deposit once from a wallet, vote forever without one). proposing is gated the same way: every anonymous action — proposing or voting — carries a fresh signature from the physical chip, approved with a button press on the device itself, so a leaked identity seed can cost privacy at most, never the ability to act. the vote emits a per-proposal nullifier derived from the chip secret, so no one can vote twice on the same proposal and no two votes are linkable to each other or to any wallet. eligibility is bucketed: the pool has nine fixed deposit sizes (0.01 to 10 MONA) and one active bucket at a time, itself changeable only by vote. beyond budgets, MatroidAnonGovernance also governs the paymaster (the gas sponsor): proposals can set per-project gas caps, change the default cap, register or block a project from sponsored gas — so if a project abuses the shared fuel, the anonymous voters can throttle or cut it, with no admin anywhere. it is the single address wired into the Treasury's budget controls.
 
 # Race Condition
 
@@ -596,34 +596,35 @@ function withdrawStake(uint256 epoch, address project) external nonReentrant {
 **Note**: deliberately has no relationship to staking, governance, or the Treasury's epoch/score system — it is a standalone, one-way funding role (see "Sponsor & Anonymous Governance" above).
 
 #### 11. MatroidAnonGovernance.sol
-**Purpose**: The sole governance contract. Anonymous, zero-knowledge voting over: Treasury budget proposals, the BalancePool active bucket, and the MatroidPaymaster (gas caps / registration / blocking). Proves identity + a shielded pool deposit instead of revealing a wallet. The only address wired into `Treasury.setBudgets`/`extendDuration` (via `onlyAnyGovernance`).
+**Purpose**: The sole governance contract. Anonymous, zero-knowledge voting over: Treasury budget proposals, the BalancePool active bucket, and the MatroidPaymaster (gas caps / registration / blocking). Every anonymous action — proposing AND voting — requires the physical chip: a fresh P-256 signature over the exact action digest, approved with the D1 button on the device, verified in zero knowledge (inherits `IdentityActionBase`). The identity seed alone is only a privacy witness — stealing it can never act. The only address wired into `Treasury.setBudgets`/`extendDuration` (via `onlyAnyGovernance`).
 
 **Proposal Kinds**: `Budget`, `Bucket`, `PmCap`, `PmDefaultCap`, `PmRegister`, `PmBlacklist`
 
 **State Variables**:
-- `IVerifier public immutable votingVerifier` - ZK proof verifier (shared `voting` circuit)
-- `ISemaphore public immutable semaphore`, `uint256 public immutable groupId` - chip-identity group (Semaphore, fed by IdentityRegistry enrollments)
+- inherited from `IdentityActionBase`: the `identity_action` Honk verifier + `IdentityRegistry` reference (Poseidon depth-20 tree of chip-attested enrollments; membership root source)
+- `IVerifier public immutable votingVerifier` - pool-membership verifier (shared `voting` circuit)
 - `IBalancePool public immutable pool` - matroid's own shielded deposit pool (eligibility source)
 - `ITreasuryGovernance public immutable treasury` - Treasury reference (calls `setBudgets`/`extendDuration`)
 - `IPaymasterGovernance public immutable paymaster` - MatroidPaymaster reference (governance was irrevocably transferred to this contract at deploy)
 - `uint64 public immutable votingWindow` - voting period per proposal
 - `uint256 public immutable quorumFloor`, `uint256 public quorum` - pass threshold (raw yes-vote count, not bps of supply — anonymous voters are not enumerable)
 - `mapping(uint256 => Proposal) public proposals` - `identityRoot`, `poolRoot`, `bucket`, `start`, `end`, `exists`, `executed`, `kind`, `newBucket`, `pmProject`, `pmFlag`, `pmValue`, `baseBudget`, `perProjectBudget`, `newDuration` (identity + pool roots are snapshotted at proposal creation so later enrollments/deposits can't retroactively change who could have voted)
-- `mapping(uint256 => mapping(uint8 => uint256)) public tally` - `[proposalId][choice]` vote counts (double-vote prevention lives in the Semaphore per-proposal nullifier)
+- `mapping(uint256 => mapping(uint8 => uint256)) public tally` - `[proposalId][choice]` vote counts
+- `mapping(uint256 => mapping(bytes32 => bool)) public usedNullifier` - per-proposal double-vote prevention (nullifier = Poseidon(chip seed, scope))
 
-**Key Functions** (all permissionless; each snapshots current identity/pool roots and opens the voting window):
-- `propose(uint256 baseBudget, uint256 perProjectBudget, uint256 newDuration) returns (uint256 id)` - Budget proposal
-- `proposeBucket(uint8 newBucket)` - change the pool's active deposit bucket
-- `proposeCap(address project, uint256 cap)` / `proposeDefaultCap(uint256 cap)` - per-project / default paymaster gas cap per epoch
-- `proposeRegister(address project, bool active)` / `proposeBlacklist(address project, bool banned)` - grant or cut a project's sponsored gas
-- `vote(ISemaphore.SemaphoreProof voteProof, bytes poolZkProof, uint256 proposalId)` - `voteProof` is a Semaphore membership proof scoped to the proposalId (message = choice, nullifier = per-proposal, unlinkable across proposals); `poolZkProof` is a `voting`-circuit Honk proof with public inputs `[poolRoot, scopeHash(proposalId), nullifier]` proving a commitment `poseidon(identitySecret, r)` is in the snapshotted pool tree and that its nullifier equals the Semaphore one — binding "has a deposit" to "is the enrolled voter" with nothing constant revealed
-- `execute(uint256 proposalId)` - after the window; passes if `yes >= quorum && yes > no`; dispatches per kind to treasury / pool / paymaster (try/catch)
+**Key Functions** (proposing is chip-gated: each propose call carries an `identity_action` proof — `PROPOSE_TAG`, payload = the proposal's own parameters, 1×D1 on the device; the propose nullifier is checked but NOT consumed, so an enrolled chip can open any number of proposals; each call snapshots current identity/pool roots and opens the voting window):
+- `propose(bytes proof, bytes32 merkleRoot, bytes32 nullifier, uint256 baseBudget, uint256 perProjectBudget, uint256 newDuration) returns (uint256 id)` - Budget proposal
+- `proposeBucket(proof, merkleRoot, nullifier, uint8 newBucket)` - change the pool's active deposit bucket
+- `proposeCap(proof, merkleRoot, nullifier, address project, uint256 cap)` / `proposeDefaultCap(proof, merkleRoot, nullifier, uint256 cap)` - per-project / default paymaster gas cap per epoch
+- `proposeRegister(proof, merkleRoot, nullifier, address project, bool active)` / `proposeBlacklist(proof, merkleRoot, nullifier, address project, bool banned)` - grant or cut a project's sponsored gas
+- `vote(bytes voteProof, bytes poolZkProof, bytes32 poolRoot, uint256 proposalId, uint8 choice, bytes32 nullifier)` - two proofs bound to ONE nullifier: `voteProof` is an `identity_action` Honk proof (the chip's P-256 signature over the vote digest + membership under the snapshotted identity root; the scope is derived from this council's address, chain id, `VOTE_TAG` and the proposalId, so nullifiers never link across proposals or across apps); `poolZkProof` is a `voting`-circuit Honk proof with public inputs `[poolRoot, scope, nullifier]` proving a deposit commitment sits in the snapshotted pool tree and that its nullifier — Poseidon(chip seed, scope), the SAME value the action proof outputs — matches, binding "has a deposit" to "is the enrolled chip" with nothing constant revealed
+- `execute(uint256 proposalId)` - after the window; permissionless crank (no proof needed — executing a passed vote grants no authority); passes if `yes >= quorum && yes > no`; dispatches per kind to treasury / pool / paymaster (try/catch)
 
 **Events**: `ProposalCreated(id, baseBudget, perProjectBudget, newDuration, end)`, `BucketProposalCreated(id, newBucket, end)`, `PaymasterProposalCreated(id, kind, project, value, flag, end)`, `Voted(id, choice, nullifier)`, `Executed(id, passed, applied)`
 
-**Errors**: `NoProposal()`, `VotingClosed()`, `VotingOpen()`, `InvalidChoice()`, `AlreadyExecuted()`, `BadProof()`, `BadScope()`, `StaleRoot()`, `BelowFloor()`, `BadBucket()`, `ZeroAddress()`
+**Errors**: `NoProposal()`, `VotingClosed()`, `VotingOpen()`, `InvalidChoice()`, `AlreadyExecuted()`, `AlreadyVoted()`, `StaleRoot()`, `BelowFloor()`, `BadBucket()` (+ the proof/root errors inherited from `IdentityActionBase`)
 
-**Note**: shares the chip-identity infrastructure (IdentityRegistry/Semaphore, the `voting` Noir circuit) with dx.computer's DxCouncil — but each app has its OWN BalancePool (separate deposits, separate bucket governance). The vote's Semaphore scope is `keccak256(address(this), proposalId)`, unique per council, so a voter's nullifier never collides between the two apps.
+**Note**: shares the chip-identity infrastructure (IdentityRegistry + the `identity_action`/`voting` Noir circuits) with dx.computer's DxCouncil — but each app has its OWN BalancePool (separate deposits, separate bucket governance). The action scope binds the council address and chain id, unique per council, so a voter's nullifier never collides between the two apps.
 
 ## Data Structures (MatroidLibrary.sol)
 
@@ -1210,9 +1211,10 @@ thresholdBpsValue: 5000 // 50% of total weight required to pass
 //   -> SlashingCouncil -> Treasury.setSlashingContract (set-once)
 //   For chip-weighted activity: deploy the `activity` ZK verifier (via bb) + IdentityRegistry,
 //   then MatroidKit.setVerification(activityVerifier, identityRegistry) (set-once).
-//   For anonymous budget governance: deploy the shared `voting` ZK verifier (via bb) +
-//   Semaphore + IdentityRegistry (reuse if already deployed) + BalancePool(hasher, mona, initialBucket),
-//   then MatroidAnonGovernance(votingVerifier, semaphore, groupId, balancePool, treasury, paymaster, ...)
+//   For anonymous budget governance: deploy the `identity_action` + `voting` ZK verifiers (via bb) +
+//   IdentityRegistry (Poseidon depth-20 enrolled-chip tree; reuse if already deployed) +
+//   BalancePool(hasher, mona, initialBucket), then MatroidAnonGovernance(identityActionVerifier,
+//   identityRegistry, votingVerifier, balancePool, treasury, paymaster, votingWindow, quorum, quorumFloor)
 //   -> BalancePool.setGovernance([matroidAnonGovernance]) (one-shot, locks)
 //   -> Treasury.setAnonGovernance (set-once)
 //   -> MatroidPaymaster.transferGovernance(matroidAnonGovernance) (after registering consumers;
@@ -1231,10 +1233,10 @@ monaAddress: 0x...
 initialBucket: 0       // index into the denomination table above
 
 // MatroidAnonGovernance
-votingVerifierAddress: 0x... // deployed `voting` circuit verifier (bb)
-semaphoreAddress: 0x...      // Semaphore core (SemaphoreVerifierZk on EraVM)
-groupId_: 0                  // IdentityRegistry's group
-poolAddress: 0x...           // BalancePool above
+identityActionVerifierAddress: 0x... // deployed `identity_action` circuit verifier (bb)
+identityRegistryAddress: 0x...       // Poseidon depth-20 tree of chip-attested enrollments
+votingVerifierAddress: 0x...         // deployed `voting` circuit verifier (bb)
+poolAddress: 0x...                   // BalancePool above
 treasuryAddress: 0x...
 paymasterAddress: 0x...      // MatroidPaymaster (governance transferred here post-deploy)
 votingWindow_: 259200             // 3 days

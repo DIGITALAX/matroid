@@ -12,7 +12,7 @@
     "stateMutability": "view",
     "inputs": [{ "name": "id", "type": "uint256" }],
     "outputs": [
-      { "name": "identityRoot", "type": "uint256" },
+      { "name": "identityRoot", "type": "bytes32" },
       { "name": "poolRoot", "type": "bytes32" },
       { "name": "bucket", "type": "uint8" },
       { "name": "start", "type": "uint64" },
@@ -65,6 +65,9 @@
     "name": "propose",
     "stateMutability": "nonpayable",
     "inputs": [
+      { "name": "proof", "type": "bytes" },
+      { "name": "merkleRoot", "type": "bytes32" },
+      { "name": "nullifier", "type": "bytes32" },
       { "name": "baseBudget", "type": "uint256" },
       { "name": "perProjectBudget", "type": "uint256" },
       { "name": "newDuration", "type": "uint256" }
@@ -75,7 +78,12 @@
     "type": "function",
     "name": "proposeBucket",
     "stateMutability": "nonpayable",
-    "inputs": [{ "name": "newBucket", "type": "uint8" }],
+    "inputs": [
+      { "name": "proof", "type": "bytes" },
+      { "name": "merkleRoot", "type": "bytes32" },
+      { "name": "nullifier", "type": "bytes32" },
+      { "name": "newBucket", "type": "uint8" }
+    ],
     "outputs": [{ "type": "uint256" }]
   },
   {
@@ -83,6 +91,9 @@
     "name": "proposeCap",
     "stateMutability": "nonpayable",
     "inputs": [
+      { "name": "proof", "type": "bytes" },
+      { "name": "merkleRoot", "type": "bytes32" },
+      { "name": "nullifier", "type": "bytes32" },
       { "name": "project", "type": "address" },
       { "name": "cap", "type": "uint256" }
     ],
@@ -92,7 +103,12 @@
     "type": "function",
     "name": "proposeDefaultCap",
     "stateMutability": "nonpayable",
-    "inputs": [{ "name": "cap", "type": "uint256" }],
+    "inputs": [
+      { "name": "proof", "type": "bytes" },
+      { "name": "merkleRoot", "type": "bytes32" },
+      { "name": "nullifier", "type": "bytes32" },
+      { "name": "cap", "type": "uint256" }
+    ],
     "outputs": [{ "type": "uint256" }]
   },
   {
@@ -100,6 +116,9 @@
     "name": "proposeRegister",
     "stateMutability": "nonpayable",
     "inputs": [
+      { "name": "proof", "type": "bytes" },
+      { "name": "merkleRoot", "type": "bytes32" },
+      { "name": "nullifier", "type": "bytes32" },
       { "name": "project", "type": "address" },
       { "name": "active", "type": "bool" }
     ],
@@ -110,6 +129,9 @@
     "name": "proposeBlacklist",
     "stateMutability": "nonpayable",
     "inputs": [
+      { "name": "proof", "type": "bytes" },
+      { "name": "merkleRoot", "type": "bytes32" },
+      { "name": "nullifier", "type": "bytes32" },
       { "name": "project", "type": "address" },
       { "name": "banned", "type": "bool" }
     ],
@@ -120,21 +142,12 @@
     "name": "vote",
     "stateMutability": "nonpayable",
     "inputs": [
-      {
-        "name": "voteProof",
-        "type": "tuple",
-        "components": [
-          { "name": "merkleTreeDepth", "type": "uint256" },
-          { "name": "merkleTreeRoot", "type": "uint256" },
-          { "name": "nullifier", "type": "uint256" },
-          { "name": "message", "type": "uint256" },
-          { "name": "scope", "type": "uint256" },
-          { "name": "points", "type": "uint256[8]" }
-        ]
-      },
+      { "name": "voteProof", "type": "bytes" },
       { "name": "poolZkProof", "type": "bytes" },
       { "name": "poolRoot", "type": "bytes32" },
-      { "name": "proposalId", "type": "uint256" }
+      { "name": "proposalId", "type": "uint256" },
+      { "name": "choice", "type": "uint8" },
+      { "name": "nullifier", "type": "bytes32" }
     ],
     "outputs": []
   },
@@ -183,7 +196,7 @@
     "inputs": [
       { "name": "id", "type": "uint256", "indexed": true },
       { "name": "choice", "type": "uint8", "indexed": false },
-      { "name": "nullifier", "type": "uint256", "indexed": false }
+      { "name": "nullifier", "type": "bytes32", "indexed": false }
     ]
   },
   {
@@ -200,8 +213,9 @@
   { "type": "error", "name": "VotingOpen", "inputs": [] },
   { "type": "error", "name": "InvalidChoice", "inputs": [] },
   { "type": "error", "name": "AlreadyExecuted", "inputs": [] },
+  { "type": "error", "name": "AlreadyVoted", "inputs": [] },
   { "type": "error", "name": "BadProof", "inputs": [] },
-  { "type": "error", "name": "BadScope", "inputs": [] },
+  { "type": "error", "name": "UnknownRoot", "inputs": [] },
   { "type": "error", "name": "StaleRoot", "inputs": [] },
   { "type": "error", "name": "BelowFloor", "inputs": [] },
   { "type": "error", "name": "BadBucket", "inputs": [] }
