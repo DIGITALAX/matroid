@@ -121,6 +121,7 @@ Matroid is a fully on-chain, permissionless activity distribution protocol that 
 - `setMatroidKit(address)` - one-time initialization (onlyOwner)
 - `registerProject(address project, string metadata, bool pool)` - called by MatroidKit, validates contract, stores the project's metadata URI, optionally creates pools
 - `createProjectPool()` - callable by any registered project to create pools post-registration
+- `updateMetadata(string metadata)` - callable by the registered project itself; replaces its stored metadata URI and emits `ProjectMetadataUpdated(project, metadata)` (the subgraph re-parses the new document)
 - `setRewardSplits(uint16 globalSplitBps, uint16 projectErc20SplitBps, uint16 projectNftSplitBps)` - configures reward distribution (sum ≤10000)
 - `setClaimer(address claimer, bool allowed)` - project authorizes/revokes claim addresses
 - `leave()` - project deregisters itself (excluded from future/current-epoch scoring) while keeping its stored record/history
@@ -179,7 +180,7 @@ JSON schema (every field optional; `title`/`description`/`image` are what pool c
 - `link` — the project's own frontend/website (if exists)
 - `languages` — ISO codes the project's interface is available in
 
-The content is client-hosted by design — matroid stores only the pointer, never the document, so a project can update its own presentation without a contract call (when hosted at a mutable `https://` URL) or pin and manage it (when hosted on IPFS).
+The content is client-hosted by design — matroid stores only the pointer, never the document, so a project can update its own presentation without a contract call (when hosted at a mutable `https://` URL) or pin and manage it (when hosted on IPFS). The pointer itself is also replaceable at any time: the registered project calls `MatroidRegistry.updateMetadata(newUri)` (projects like DxProject expose an admin passthrough for this).
 
 #### 3. MatroidScorer.sol
 **Purpose**: Pure on-chain scoring algorithm implementation.
