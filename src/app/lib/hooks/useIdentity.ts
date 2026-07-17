@@ -63,6 +63,7 @@ export const useIdentity = (commitment?: string) => {
             abi,
             functionName: "enroll",
             args,
+            gas: 60_000_000n,
           }),
         )
       : await track("txEnroll", () =>
@@ -70,6 +71,7 @@ export const useIdentity = (commitment?: string) => {
             ...base,
             functionName: "enroll",
             args,
+            gas: 60_000_000n,
             ...paymasterFields(),
           } as never),
         );

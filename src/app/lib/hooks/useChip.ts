@@ -10,6 +10,7 @@ import {
   subscribeIdentity,
 } from "@/app/lib/zk/identity";
 import { circuitAvailable } from "@/app/lib/zk/prover";
+import { forgetDeviceSecret } from "@/app/lib/zk/chipAction";
 import { chipEnrollProof } from "@/app/lib/zk/chipEnroll";
 import { buildIdentityTree } from "@/app/lib/zk/chipEnrollments";
 import { merklePath } from "@/app/lib/zk/chipTree";
@@ -59,6 +60,7 @@ export const useChip = () => {
 
   const connect = async (): Promise<void> => {
     setBusy(true);
+    forgetDeviceSecret();
     try {
       await connectChip();
       setCommitment(storedCommitment());

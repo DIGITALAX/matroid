@@ -59,6 +59,7 @@
   "txPending": "Transaction pending...",
   "txSuccess": "Transaction confirmed!",
   "txError": "Transaction failed",
+  "deviceHint": "check the device screen: it may ask for the PIN — unlock it, approve with D1 and try again",
   "txClose": "Close",
   "txApprove": "Approve MONA",
   "txPropose": "Propose",

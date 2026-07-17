@@ -65,6 +65,11 @@ export default function TxPopupEntry({ dict }: { dict: any }) {
               {message}
             </div>
           )}
+          {tx.status === "error" && tx.message?.startsWith("device:") && (
+            <div className="relative w-full h-fit flex flex-row justify-center text-xs opacity-80 text-center">
+              {dict?.deviceHint}
+            </div>
+          )}
           {tx.hash && (
             <div className="relative w-full h-fit flex flex-row justify-center text-[10px] opacity-50 break-all">
               {tx.hash}

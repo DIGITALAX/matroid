@@ -59,6 +59,7 @@
   "txPending": "Transacción pendiente...",
   "txSuccess": "¡Transacción confirmada!",
   "txError": "La transacción falló",
+  "deviceHint": "mira la pantalla del device: puede pedir el PIN — desbloquéalo, aprueba con D1 y prueba otra vez",
   "txClose": "Cerrar",
   "txApprove": "Aprobar MONA",
   "txPropose": "Proponer",
